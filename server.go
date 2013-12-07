@@ -33,11 +33,19 @@ func unsafe(str string) template.HTML {
   return template.HTML(str)
 }
 
+var linebreakPattern, _ = regexp.Compile("\r?\n")
+
+func linebreak(str string) string {
+  // REVIEW: Should I use []byte instead of string?
+  return string(linebreakPattern.ReplaceAll([]byte(str), []byte("<br>")))
+}
+
 type TemplateMap map[string]*template.Template
 
 func prepareTemplates(filenames ...string) TemplateMap {
   funcMap := template.FuncMap {
     "unsafe": unsafe,
+    "linebreak": linebreak,
   }
   tmpls := make(TemplateMap)
   for _, filename := range filenames {
@@ -112,6 +120,9 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
   }
 }
 
+//
+// Execution
+//
 func cleanupBeforeExit(cleanup func()) {
   terminateChan := make(chan os.Signal, 1)
   signal.Notify(terminateChan, os.Interrupt)

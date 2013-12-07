@@ -2,7 +2,7 @@
 <h2>Editing {{.Date}}</h2>
 <form action="/save/{{.Date}}" method="POST">
   <div>
-    <textarea name="body" rows="20" cols="80">{{printf "%s" .Body}}</textarea>
+    <textarea name="body" rows="20" cols="80">{{.Body}}</textarea>
   </div>
   <div>
     <input type="submit" value="Save">
