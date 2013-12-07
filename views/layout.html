@@ -1,0 +1,22 @@
+{{define "layout"}}<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Morning Pages</title>
+    <link rel="stylesheet" type="text/css" href="/bower_components/bootstrap/dist/css/bootstrap.css">
+    <script src="/bower_components/bootstrap/dist/js/bootstrap.js"></script>
+  </head>
+  <body>
+    <div class="container">
+      <div class="page-header">
+        <h1><a href="/">Morning Pages</a></h1>
+      </div>
+      <div class="row">
+        <div class="col-md-12">
+          {{template "body" .}}
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
+{{end}}

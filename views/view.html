@@ -1,0 +1,5 @@
+{{define "body"}}
+<h2>{{.Date}}</h2>
+<p>[<a href="/edit/{{.Date}}">edit</a>]</p>
+<div>{{printf "%s" .Body | unsafe}}</div>
+{{end}}
