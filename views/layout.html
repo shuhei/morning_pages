@@ -10,7 +10,10 @@
   <body>
     <div class="container">
       <div class="page-header">
-        <h1><a href="/">Morning Pages</a></h1>
+        <h1><a href="/">Morning Pages</a>{{if .CurrentUser}} <small>Hi, {{.CurrentUser.Name}}! {{end}}</small></h1>
+        {{if .CurrentUser}}
+          <p><a href="/auth/logout">Log out</a></p>
+        {{end}}
       </div>
       <div class="row">
         <div class="col-md-12">

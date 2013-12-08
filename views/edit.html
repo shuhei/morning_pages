@@ -1,9 +1,9 @@
 {{define "body"}}
-<h2>Editing {{.Date}}</h2>
-<form action="/entries/{{.Date}}" method="POST" class="form">
+<h2>Editing {{.Entry.Date}}</h2>
+<form action="/entries/{{.Entry.Date}}" method="POST" class="form">
   <div class="form-group" id="entry-body">
-    <textarea name="body" rows="20" cols="80" class="form-control">{{.Body}}</textarea>
-    <p class="pull-right"><span class="char-count">{{charCount .Body}}</span> characters</p>
+    <textarea name="body" rows="20" cols="80" class="form-control">{{.Entry.Body}}</textarea>
+    <p class="pull-right"><span class="char-count">{{charCount .Entry.Body}}</span> characters</p>
   </div>
   <div class="form-group">
     <input type="submit" value="Save" class="btn btn-default">

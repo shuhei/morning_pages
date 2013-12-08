@@ -72,8 +72,8 @@ func prepareTemplates(filenames ...string) TemplateMap {
 
 var templates = prepareTemplates("edit.html", "view.html", "auth.html")
 
-func renderTemplate(w http.ResponseWriter, tmpl string, p *Entry) {
-  err := templates[tmpl + ".html"].ExecuteTemplate(w, "layout", p)
+func renderTemplate(w http.ResponseWriter, tmpl string, data interface{}) {
+  err := templates[tmpl + ".html"].ExecuteTemplate(w, "layout", data)
   if err != nil {
     http.Error(w, err.Error(), http.StatusInternalServerError)
     return
@@ -83,7 +83,6 @@ func renderTemplate(w http.ResponseWriter, tmpl string, p *Entry) {
 //
 // Context
 //
-
 const CONTEXT_CURRENT_USER_KEY string = "current-user"
 
 func GetCurrentUser(r *http.Request) *User {
@@ -128,22 +127,28 @@ func makeHandler(fn func(http.ResponseWriter, *http.Request, string)) http.Handl
 }
 
 func viewHandler(w http.ResponseWriter, r *http.Request, date string) {
-  var p Entry
-  err := entries.Find(bson.M{"date": date}).One(&p)
+  var entry Entry
+  err := entries.Find(bson.M{"date": date}).One(&entry)
   if err != nil {
     http.Redirect(w, r, "/entries/" + date + "/edit", http.StatusFound)
     return
   }
-  renderTemplate(w, "view", &p)
+  data := make(map[string]interface{})
+  data["Entry"] = &entry
+  data["CurrentUser"] = GetCurrentUser(r)
+  renderTemplate(w, "view", data)
 }
 
 func editHandler(w http.ResponseWriter, r *http.Request, date string) {
-  var p Entry
-  err := entries.Find(bson.M{"date": date}).One(&p)
+  var entry Entry
+  err := entries.Find(bson.M{"date": date}).One(&entry)
   if err != nil {
-    p = Entry{Id: bson.NewObjectId(), Date: date, Body: ""}
+    entry = Entry{Id: bson.NewObjectId(), Date: date, Body: ""}
   }
-  renderTemplate(w, "edit", &p)
+  data := make(map[string]interface{})
+  data["Entry"] = &entry
+  data["CurrentUser"] = GetCurrentUser(r)
+  renderTemplate(w, "edit", data)
 }
 
 func saveHandler(w http.ResponseWriter, r *http.Request, date string) {
@@ -172,7 +177,9 @@ var redirectUrl = "http://localhost:5000/auth/callback"
 func authHandler(w http.ResponseWriter, r *http.Request) {
   appId := os.Getenv("FB_APP_ID")
   dialogUrl := fmt.Sprintf("https://www.facebook.com/dialog/oauth?client_id=%s&redirect_uri=%s", appId, redirectUrl)
-  err := templates["auth.html"].ExecuteTemplate(w, "layout", dialogUrl)
+  data := make(map[string]interface{})
+  data["FacebookUrl"] = dialogUrl
+  err := templates["auth.html"].ExecuteTemplate(w, "layout", data)
   if err != nil {
     http.Error(w, err.Error(), http.StatusInternalServerError)
     return
