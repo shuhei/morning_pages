@@ -25,9 +25,10 @@ import (
 // Models
 //
 type Entry struct {
-  Id   bson.ObjectId `bson:"_id"`
-  Date string        `bson:"date"`
-  Body string        `bson:"body"`
+  Id     bson.ObjectId `bson:"_id"`
+  Date   string        `bson:"date"`
+  Body   string        `bson:"body"`
+  UserId bson.ObjectId `bson:"user_id"`
 }
 
 var entries *mgo.Collection
@@ -127,8 +128,9 @@ func makeHandler(fn func(http.ResponseWriter, *http.Request, string)) http.Handl
 }
 
 func viewHandler(w http.ResponseWriter, r *http.Request, date string) {
+  user := GetCurrentUser(r)
   var entry Entry
-  err := entries.Find(bson.M{"date": date}).One(&entry)
+  err := entries.Find(bson.M{"user_id": user.Id, "date": date}).One(&entry)
   if err != nil {
     http.Redirect(w, r, "/entries/" + date + "/edit", http.StatusFound)
     return
@@ -140,10 +142,11 @@ func viewHandler(w http.ResponseWriter, r *http.Request, date string) {
 }
 
 func editHandler(w http.ResponseWriter, r *http.Request, date string) {
+  user := GetCurrentUser(r)
   var entry Entry
-  err := entries.Find(bson.M{"date": date}).One(&entry)
+  err := entries.Find(bson.M{"user_id": user.Id, "date": date}).One(&entry)
   if err != nil {
-    entry = Entry{Id: bson.NewObjectId(), Date: date, Body: ""}
+    entry = Entry{Id: bson.NewObjectId(), Date: date, Body: "", UserId: user.Id}
   }
   data := make(map[string]interface{})
   data["Entry"] = &entry
@@ -153,7 +156,8 @@ func editHandler(w http.ResponseWriter, r *http.Request, date string) {
 
 func saveHandler(w http.ResponseWriter, r *http.Request, date string) {
   body := r.FormValue("body")
-  _, err := entries.Upsert(bson.M{"date": date}, bson.M{"date": date, "body": body})
+  user := GetCurrentUser(r)
+  _, err := entries.Upsert(bson.M{"date": date, "user_id": user.Id}, bson.M{"date": date, "user_id": user.Id, "body": body})
   if err != nil {
     http.Error(w, err.Error(), http.StatusInternalServerError)
     return
@@ -193,6 +197,7 @@ func authLogoutHandler(w http.ResponseWriter, r *http.Request) {
   http.Redirect(w, r, "/auth", http.StatusFound)
 }
 
+// TODO: Split this looooong function.
 func authCallbackHandler(w http.ResponseWriter, r *http.Request) {
   // TODO: Handle the case user cancelled logging in.
 
