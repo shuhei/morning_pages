@@ -114,6 +114,17 @@ func staticHandler(w http.ResponseWriter, r *http.Request) {
   http.ServeFile(w, r, "public" + r.URL.Path)
 }
 
+func prepareRouter(entries *mgo.Collection) *mux.Router {
+  r := mux.NewRouter()
+  datePattern := "{date:[0-9]+-[0-9]+-[0-9]+}"
+  r.HandleFunc("/", rootHandler).Methods("GET")
+  r.HandleFunc("/entries/" + datePattern, makeHandler(viewHandler, entries)).Methods("GET")
+  r.HandleFunc("/entries/" + datePattern, makeHandler(saveHandler, entries)).Methods("POST")
+  r.HandleFunc("/entries/" + datePattern + "/edit", makeHandler(editHandler, entries)).Methods("GET")
+  r.HandleFunc("/{filepath:.+}", staticHandler).Methods("GET")
+  return r
+}
+
 //
 // Execution
 //
@@ -144,19 +155,12 @@ func main() {
   })
 
   entries := session.DB("morning_pages").C("entries")
-
-  r := mux.NewRouter()
-  datePattern := "{date:[0-9]+-[0-9]+-[0-9]+}"
-  r.HandleFunc("/", rootHandler).Methods("GET")
-  r.HandleFunc("/entries/" + datePattern, makeHandler(viewHandler, entries)).Methods("GET")
-  r.HandleFunc("/entries/" + datePattern, makeHandler(saveHandler, entries)).Methods("POST")
-  r.HandleFunc("/entries/" + datePattern + "/edit", makeHandler(editHandler, entries)).Methods("GET")
-  r.HandleFunc("/{filepath:.+}", staticHandler).Methods("GET")
+  router := prepareRouter(entries)
 
   port := os.Getenv("PORT")
   if port == "" {
-    port = "8080"
+    port = "5000"
   }
   log.Println("Listening on " + port)
-  http.ListenAndServe(":" + port, r)
+  http.ListenAndServe(":" + port, router)
 }
