@@ -20,13 +20,23 @@ import (
 )
 
 //
-// Entry
+// Models
 //
 type Entry struct {
   Id   bson.ObjectId `bson:"_id"`
   Date string        `bson:"date"`
   Body string        `bson:"body"`
 }
+
+var entries *mgo.Collection
+
+type User struct {
+  Id    bson.ObjectId `bson:"_id"`
+  Uid   string        `bson:"uid"`
+  Name  string        `bson:"name"`
+}
+
+var users *mgo.Collection
 
 //
 // Template
@@ -71,14 +81,14 @@ func renderTemplate(w http.ResponseWriter, tmpl string, p *Entry) {
 //
 // Handlers
 //
-func makeHandler(fn func(http.ResponseWriter, *http.Request, string, *mgo.Collection), entries *mgo.Collection) http.HandlerFunc {
+func makeHandler(fn func(http.ResponseWriter, *http.Request, string)) http.HandlerFunc {
   return func(w http.ResponseWriter, r *http.Request) {
     date := mux.Vars(r)["date"]
-    fn(w, r, date, entries)
+    fn(w, r, date)
   }
 }
 
-func viewHandler(w http.ResponseWriter, r *http.Request, date string, entries *mgo.Collection) {
+func viewHandler(w http.ResponseWriter, r *http.Request, date string) {
   var p Entry
   err := entries.Find(bson.M{"date": date}).One(&p)
   if err != nil {
@@ -88,7 +98,7 @@ func viewHandler(w http.ResponseWriter, r *http.Request, date string, entries *m
   renderTemplate(w, "view", &p)
 }
 
-func editHandler(w http.ResponseWriter, r *http.Request, date string, entries *mgo.Collection) {
+func editHandler(w http.ResponseWriter, r *http.Request, date string) {
   var p Entry
   err := entries.Find(bson.M{"date": date}).One(&p)
   if err != nil {
@@ -97,7 +107,7 @@ func editHandler(w http.ResponseWriter, r *http.Request, date string, entries *m
   renderTemplate(w, "edit", &p)
 }
 
-func saveHandler(w http.ResponseWriter, r *http.Request, date string, entries *mgo.Collection) {
+func saveHandler(w http.ResponseWriter, r *http.Request, date string) {
   body := r.FormValue("body")
   _, err := entries.Upsert(bson.M{"date": date}, bson.M{"date": date, "body": body})
   if err != nil {
@@ -117,6 +127,7 @@ func staticHandler(w http.ResponseWriter, r *http.Request) {
   http.ServeFile(w, r, "public" + r.URL.Path)
 }
 
+// TODO: Determine redirect URL using the actual hostname and port.
 var redirectUrl = "http://localhost:5000/auth/callback"
 
 func authHandler(w http.ResponseWriter, r *http.Request) {
@@ -131,6 +142,7 @@ func authHandler(w http.ResponseWriter, r *http.Request) {
 
 func authCallbackHandler(w http.ResponseWriter, r *http.Request) {
   // TODO: Handle the case user cancelled logging in.
+
   appId := os.Getenv("FB_APP_ID")
   appSecret := os.Getenv("FB_APP_SECRET")
   code := r.URL.Query()["code"][0]
@@ -172,21 +184,33 @@ func authCallbackHandler(w http.ResponseWriter, r *http.Request) {
   myInfo := make(map[string]interface{})
   err = json.Unmarshal(myResBody, &myInfo)
 
-  myName := myInfo["name"]
-  log.Println(myName)
+  myId := myInfo["id"].(string)
+  myName := myInfo["name"].(string)
+
+  var user User
+  err = users.Find(bson.M{"uid": myId}).One(&user)
+  if (err != nil) {
+    user = User{Id: bson.NewObjectId(), Uid: myId, Name: myName}
+    _ = users.Insert(user)
+    log.Println("Created a new user", user.Id)
+  } else {
+    log.Println("Found a user", user.Id)
+  }
+
+  // TODO: Save user id in session.
 
   http.Redirect(w, r, "/", http.StatusFound)
 }
 
-func prepareRouter(entries *mgo.Collection) *mux.Router {
+func prepareRouter() *mux.Router {
   r := mux.NewRouter()
   datePattern := "{date:[0-9]+-[0-9]+-[0-9]+}"
   r.HandleFunc("/", rootHandler).Methods("GET")
   r.HandleFunc("/auth", authHandler)
   r.HandleFunc("/auth/callback", authCallbackHandler)
-  r.HandleFunc("/entries/" + datePattern, makeHandler(viewHandler, entries)).Methods("GET")
-  r.HandleFunc("/entries/" + datePattern, makeHandler(saveHandler, entries)).Methods("POST")
-  r.HandleFunc("/entries/" + datePattern + "/edit", makeHandler(editHandler, entries)).Methods("GET")
+  r.HandleFunc("/entries/" + datePattern, makeHandler(viewHandler)).Methods("GET")
+  r.HandleFunc("/entries/" + datePattern, makeHandler(saveHandler)).Methods("POST")
+  r.HandleFunc("/entries/" + datePattern + "/edit", makeHandler(editHandler)).Methods("GET")
   r.HandleFunc("/{filepath:.+}", staticHandler).Methods("GET")
   return r
 }
@@ -220,8 +244,11 @@ func main() {
     os.Exit(1)
   })
 
-  entries := session.DB("morning_pages").C("entries")
-  router := prepareRouter(entries)
+  db := session.DB("morning_pages")
+  entries = db.C("entries")
+  users = db.C("users")
+
+  router := prepareRouter()
 
   port := os.Getenv("PORT")
   if port == "" {
