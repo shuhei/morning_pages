@@ -1,6 +1,6 @@
 {{define "body"}}
 <h2>Editing {{.Date}}</h2>
-<form action="/save/{{.Date}}" method="POST" class="form">
+<form action="/entries/{{.Date}}" method="POST" class="form">
   <div class="form-group" id="entry-body">
     <textarea name="body" rows="20" cols="80" class="form-control">{{.Body}}</textarea>
     <p class="pull-right"><span class="char-count">{{charCount .Body}}</span> characters</p>

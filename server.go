@@ -79,7 +79,7 @@ func viewHandler(w http.ResponseWriter, r *http.Request, date string, entries *m
   var p Entry
   err := entries.Find(bson.M{"date": date}).One(&p)
   if err != nil {
-    http.Redirect(w, r, "/edit/" + date, http.StatusFound)
+    http.Redirect(w, r, "/entries/" + date + "/edit", http.StatusFound)
     return
   }
   renderTemplate(w, "view", &p)
@@ -101,13 +101,13 @@ func saveHandler(w http.ResponseWriter, r *http.Request, date string, entries *m
     http.Error(w, err.Error(), http.StatusInternalServerError)
     return
   }
-  http.Redirect(w, r, "/view/" + date, http.StatusFound)
+  http.Redirect(w, r, "/entries/" + date, http.StatusFound)
 }
 
 func rootHandler(w http.ResponseWriter, r *http.Request) {
   now := time.Now()
   today := fmt.Sprintf("%d-%d-%d", now.Year(), now.Month(), now.Day())
-  http.Redirect(w, r, "/view/" + today, http.StatusFound)
+  http.Redirect(w, r, "/entries/" + today, http.StatusFound)
 }
 
 func staticHandler(w http.ResponseWriter, r *http.Request) {
@@ -146,11 +146,12 @@ func main() {
   entries := session.DB("morning_pages").C("entries")
 
   r := mux.NewRouter()
-  r.HandleFunc("/", rootHandler)
-  r.HandleFunc("/view/{date:[0-9]+-[0-9]+-[0-9]+}", makeHandler(viewHandler, entries))
-  r.HandleFunc("/edit/{date:[0-9]+-[0-9]+-[0-9]+}", makeHandler(editHandler, entries))
-  r.HandleFunc("/save/{date:[0-9]+-[0-9]+-[0-9]+}", makeHandler(saveHandler, entries))
-  r.HandleFunc("/{filepath:.+}", staticHandler)
+  datePattern := "{date:[0-9]+-[0-9]+-[0-9]+}"
+  r.HandleFunc("/", rootHandler).Methods("GET")
+  r.HandleFunc("/entries/" + datePattern, makeHandler(viewHandler, entries)).Methods("GET")
+  r.HandleFunc("/entries/" + datePattern, makeHandler(saveHandler, entries)).Methods("POST")
+  r.HandleFunc("/entries/" + datePattern + "/edit", makeHandler(editHandler, entries)).Methods("GET")
+  r.HandleFunc("/{filepath:.+}", staticHandler).Methods("GET")
 
   port := os.Getenv("PORT")
   if port == "" {
@@ -159,4 +160,3 @@ func main() {
   log.Println("Listening on " + port)
   http.ListenAndServe(":" + port, r)
 }
-
