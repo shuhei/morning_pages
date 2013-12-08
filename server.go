@@ -16,7 +16,9 @@ import (
   "labix.org/v2/mgo"
   "labix.org/v2/mgo/bson"
   "github.com/joho/godotenv"
+  "github.com/gorilla/context"
   "github.com/gorilla/mux"
+  "github.com/gorilla/sessions"
 )
 
 //
@@ -79,10 +81,47 @@ func renderTemplate(w http.ResponseWriter, tmpl string, p *Entry) {
 }
 
 //
+// Context
+//
+
+const CONTEXT_CURRENT_USER_KEY string = "current-user"
+
+func GetCurrentUser(r *http.Request) *User {
+  if user := context.Get(r, CONTEXT_CURRENT_USER_KEY); user != nil {
+    return user.(*User)
+  }
+  return nil
+}
+
+func SetCurrentUser(r *http.Request, user *User) {
+  context.Set(r, CONTEXT_CURRENT_USER_KEY, user)
+}
+
+//
 // Handlers
 //
+var sessionStore = sessions.NewCookieStore([]byte(os.Getenv("SESSION_KEY")))
+const SESSION_NAME string = "default-session"
+const SESSION_USER_ID_KEY string = "user-id"
+
 func makeHandler(fn func(http.ResponseWriter, *http.Request, string)) http.HandlerFunc {
   return func(w http.ResponseWriter, r *http.Request) {
+    // Authenticate
+    session, _ := sessionStore.Get(r, SESSION_NAME)
+    userId := session.Values[SESSION_USER_ID_KEY]
+    if userId == nil {
+      http.Redirect(w, r, "/auth", http.StatusFound)
+      return
+    }
+    var user User
+    err := users.FindId(bson.ObjectIdHex(userId.(string))).One(&user)
+    if err != nil {
+      // REVIEW: Invalid user ID?
+      http.Redirect(w, r, "/auth", http.StatusFound)
+      return
+    }
+    SetCurrentUser(r, &user)
+
     date := mux.Vars(r)["date"]
     fn(w, r, date)
   }
@@ -138,6 +177,13 @@ func authHandler(w http.ResponseWriter, r *http.Request) {
     http.Error(w, err.Error(), http.StatusInternalServerError)
     return
   }
+}
+
+func authLogoutHandler(w http.ResponseWriter, r *http.Request) {
+  session, _ := sessionStore.Get(r, SESSION_NAME)
+  session.Values[SESSION_USER_ID_KEY] = nil
+  session.Save(r, w)
+  http.Redirect(w, r, "/auth", http.StatusFound)
 }
 
 func authCallbackHandler(w http.ResponseWriter, r *http.Request) {
@@ -197,7 +243,10 @@ func authCallbackHandler(w http.ResponseWriter, r *http.Request) {
     log.Println("Found a user", user.Id)
   }
 
-  // TODO: Save user id in session.
+  // Save user id in session.
+  session, _ := sessionStore.Get(r, SESSION_NAME)
+  session.Values[SESSION_USER_ID_KEY] = user.Id.Hex()
+  session.Save(r, w)
 
   http.Redirect(w, r, "/", http.StatusFound)
 }
@@ -207,6 +256,7 @@ func prepareRouter() *mux.Router {
   datePattern := "{date:[0-9]+-[0-9]+-[0-9]+}"
   r.HandleFunc("/", rootHandler).Methods("GET")
   r.HandleFunc("/auth", authHandler)
+  r.HandleFunc("/auth/logout", authLogoutHandler)
   r.HandleFunc("/auth/callback", authCallbackHandler)
   r.HandleFunc("/entries/" + datePattern, makeHandler(viewHandler)).Methods("GET")
   r.HandleFunc("/entries/" + datePattern, makeHandler(saveHandler)).Methods("POST")
