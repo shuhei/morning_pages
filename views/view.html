@@ -2,4 +2,5 @@
 <h2>{{.Date}}</h2>
 <p>[<a href="/edit/{{.Date}}">edit</a>]</p>
 <div>{{.Body | linebreak | unsafe}}</div>
+<p class="pull-right"><span class="char-count">{{charCount .Body}}</span> characters</p>
 {{end}}

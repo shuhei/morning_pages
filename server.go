@@ -8,6 +8,7 @@ import (
   "time"
   "html/template"
   "net/http"
+  "unicode/utf8"
   "labix.org/v2/mgo"
   "labix.org/v2/mgo/bson"
 )
@@ -46,6 +47,7 @@ func prepareTemplates(filenames ...string) TemplateMap {
   funcMap := template.FuncMap {
     "unsafe": unsafe,
     "linebreak": linebreak,
+    "charCount": utf8.RuneCountInString,
   }
   tmpls := make(TemplateMap)
   for _, filename := range filenames {

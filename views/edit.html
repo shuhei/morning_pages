@@ -1,11 +1,23 @@
 {{define "body"}}
 <h2>Editing {{.Date}}</h2>
-<form action="/save/{{.Date}}" method="POST">
-  <div>
-    <textarea name="body" rows="20" cols="80">{{.Body}}</textarea>
+<form action="/save/{{.Date}}" method="POST" class="form">
+  <div class="form-group" id="entry-body">
+    <textarea name="body" rows="20" cols="80" class="form-control">{{.Body}}</textarea>
+    <p class="pull-right"><span class="char-count">{{charCount .Body}}</span> characters</p>
   </div>
-  <div>
-    <input type="submit" value="Save">
+  <div class="form-group">
+    <input type="submit" value="Save" class="btn btn-default">
   </div>
 </form>
+<script>
+  jQuery(function ($) {
+    var $entryBody, $textarea, $charCount;
+    $entryBody = $('#entry-body').on('keyup', function () {
+      var count = $textarea.val().length;
+      $charCount.text(count);
+    });
+    $textarea = $entryBody.find('textarea');
+    $charCount = $entryBody.find('.char-count');
+  });
+</script>
 {{end}}
