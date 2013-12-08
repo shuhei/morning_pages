@@ -2,6 +2,7 @@ package main
 
 import (
   "fmt"
+  "log"
   "regexp"
   "os"
   "os/signal"
@@ -11,6 +12,7 @@ import (
   "unicode/utf8"
   "labix.org/v2/mgo"
   "labix.org/v2/mgo/bson"
+  "github.com/joho/godotenv"
 )
 
 //
@@ -20,11 +22,6 @@ type Entry struct {
   Id   bson.ObjectId `bson:"_id"`
   Date string        `bson:"date"`
   Body string        `bson:"body"`
-}
-
-func (p *Entry) save() error {
-  fmt.Println(p.Body)
-  return nil
 }
 
 //
@@ -136,12 +133,17 @@ func cleanupBeforeExit(cleanup func()) {
 }
 
 func main() {
-  session, err := mgo.Dial("localhost:27017")
+  err := godotenv.Load()
+  if err != nil {
+    log.Fatal(err)
+  }
+
+  session, err := mgo.Dial(os.Getenv("MONGO_HOST"))
   if (err != nil) {
-    panic(err)
+    log.Fatal(err)
   }
   cleanupBeforeExit(func() {
-    fmt.Println("Cleaning up...")
+    log.Println("Cleaning up...")
     session.Close()
     os.Exit(1)
   })
@@ -157,7 +159,7 @@ func main() {
   if port == "" {
     port = "8080"
   }
-  fmt.Println("Listening on " + port)
+  log.Println("Listening on " + port)
   http.ListenAndServe(":" + port, nil)
 }
 
