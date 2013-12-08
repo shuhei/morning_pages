@@ -13,6 +13,7 @@ import (
   "labix.org/v2/mgo"
   "labix.org/v2/mgo/bson"
   "github.com/joho/godotenv"
+  "github.com/gorilla/mux"
 )
 
 //
@@ -67,16 +68,10 @@ func renderTemplate(w http.ResponseWriter, tmpl string, p *Entry) {
 //
 // Handlers
 //
-var validPath = regexp.MustCompile("^/(edit|save|view)/([0-9]+-[0-9]+-[0-9]+)$")
-
 func makeHandler(fn func(http.ResponseWriter, *http.Request, string, *mgo.Collection), entries *mgo.Collection) http.HandlerFunc {
   return func(w http.ResponseWriter, r *http.Request) {
-    m := validPath.FindStringSubmatch(r.URL.Path)
-    if m == nil {
-      http.NotFound(w, r)
-      return
-    }
-    fn(w, r, m[2], entries)
+    date := mux.Vars(r)["date"]
+    fn(w, r, date, entries)
   }
 }
 
@@ -110,13 +105,13 @@ func saveHandler(w http.ResponseWriter, r *http.Request, date string, entries *m
 }
 
 func rootHandler(w http.ResponseWriter, r *http.Request) {
-  if r.URL.Path == "/" {
-    now := time.Now()
-    today := fmt.Sprintf("%d-%d-%d", now.Year(), now.Month(), now.Day())
-    http.Redirect(w, r, "/view/" + today, http.StatusFound)
-  } else {
-    http.ServeFile(w, r, "public" + r.URL.Path)
-  }
+  now := time.Now()
+  today := fmt.Sprintf("%d-%d-%d", now.Year(), now.Month(), now.Day())
+  http.Redirect(w, r, "/view/" + today, http.StatusFound)
+}
+
+func staticHandler(w http.ResponseWriter, r *http.Request) {
+  http.ServeFile(w, r, "public" + r.URL.Path)
 }
 
 //
@@ -150,16 +145,18 @@ func main() {
 
   entries := session.DB("morning_pages").C("entries")
 
-  http.HandleFunc("/view/", makeHandler(viewHandler, entries))
-  http.HandleFunc("/edit/", makeHandler(editHandler, entries))
-  http.HandleFunc("/save/", makeHandler(saveHandler, entries))
-  http.HandleFunc("/", rootHandler)
+  r := mux.NewRouter()
+  r.HandleFunc("/", rootHandler)
+  r.HandleFunc("/view/{date:[0-9]+-[0-9]+-[0-9]+}", makeHandler(viewHandler, entries))
+  r.HandleFunc("/edit/{date:[0-9]+-[0-9]+-[0-9]+}", makeHandler(editHandler, entries))
+  r.HandleFunc("/save/{date:[0-9]+-[0-9]+-[0-9]+}", makeHandler(saveHandler, entries))
+  r.HandleFunc("/{filepath:.+}", staticHandler)
 
   port := os.Getenv("PORT")
   if port == "" {
     port = "8080"
   }
   log.Println("Listening on " + port)
-  http.ListenAndServe(":" + port, nil)
+  http.ListenAndServe(":" + port, r)
 }
 
