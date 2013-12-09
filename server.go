@@ -7,6 +7,7 @@ import (
   "io/ioutil"
   "os"
   "os/signal"
+  "strings"
   "time"
   "html/template"
   "net/http"
@@ -55,13 +56,18 @@ func linebreak(str string) string {
   return string(linebreakPattern.ReplaceAll([]byte(str), []byte("<br>")))
 }
 
+func charCount(str string) int {
+  withoutCr := strings.Replace(str, "\r\n", "\n", -1)
+  return utf8.RuneCountInString(withoutCr)
+}
+
 type TemplateMap map[string]*template.Template
 
 func prepareTemplates(filenames ...string) TemplateMap {
   funcMap := template.FuncMap {
     "unsafe": unsafe,
     "linebreak": linebreak,
-    "charCount": utf8.RuneCountInString,
+    "charCount": charCount,
   }
   tmpls := make(TemplateMap)
   for _, filename := range filenames {

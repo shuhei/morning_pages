@@ -9,8 +9,3 @@ A [Morning Pages](http://juliacameronlive.com/basic-tools/morning-pages/) app fo
 1. Install Go, Node.js and bower.
 2. Pull this repository.
 3. `cd public` and `bower install` for front-end libraries.
-
-## TODO
-
-- Fix the character count difference of js and go.
-- Automatically save entry and record progress.
