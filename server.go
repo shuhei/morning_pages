@@ -182,11 +182,13 @@ func staticHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // TODO: Determine redirect URL using the actual hostname and port.
-var redirectUrl = "http://localhost:5000/auth/callback"
+func redirectUrl(r *http.Request) string {
+  return fmt.Sprintf("http://%s/auth/callback", r.Host)
+}
 
 func authHandler(w http.ResponseWriter, r *http.Request) {
   appId := os.Getenv("FB_APP_ID")
-  dialogUrl := fmt.Sprintf("https://www.facebook.com/dialog/oauth?client_id=%s&redirect_uri=%s", appId, redirectUrl)
+  dialogUrl := fmt.Sprintf("https://www.facebook.com/dialog/oauth?client_id=%s&redirect_uri=%s", appId, redirectUrl(r))
   data := make(map[string]interface{})
   data["FacebookUrl"] = dialogUrl
   err := templates["auth.html"].ExecuteTemplate(w, "layout", data)
@@ -212,7 +214,7 @@ func authCallbackHandler(w http.ResponseWriter, r *http.Request) {
   code := r.URL.Query()["code"][0]
 
   // Get access token with the code.
-  tokenUrl := fmt.Sprintf("https://graph.facebook.com/oauth/access_token?client_id=%s&redirect_uri=%s&client_secret=%s&code=%s", appId, redirectUrl, appSecret, code)
+  tokenUrl := fmt.Sprintf("https://graph.facebook.com/oauth/access_token?client_id=%s&redirect_uri=%s&client_secret=%s&code=%s", appId, redirectUrl(r), appSecret, code)
   res, err := http.Get(tokenUrl)
   if err != nil {
     log.Println("Failed to request access token from Facebook")
@@ -299,7 +301,7 @@ func cleanupBeforeExit(cleanup func()) {
 func main() {
   err := godotenv.Load()
   if err != nil {
-    log.Fatal(err)
+    log.Println("Failed to load .env. Maybe on Heroku?")
   }
 
   session, err := mgo.Dial(os.Getenv("MONGO_HOST"))
