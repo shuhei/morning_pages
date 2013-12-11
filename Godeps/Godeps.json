@@ -1,0 +1,31 @@
+{
+	"ImportPath": "github.com/shuhei/morning_pages",
+	"GoVersion": "go1.2",
+	"Deps": [
+		{
+			"ImportPath": "github.com/gorilla/context",
+			"Rev": "a08edd30ad9e104612741163dc087a613829a23c"
+		},
+		{
+			"ImportPath": "github.com/gorilla/mux",
+			"Rev": "9ede152210fa25c1377d33e867cb828c19316445"
+		},
+		{
+			"ImportPath": "github.com/gorilla/securecookie",
+			"Rev": "972f32923fd3555b7f0ea39acdc4e3d4d5412ee8"
+		},
+		{
+			"ImportPath": "github.com/gorilla/sessions",
+			"Rev": "c9bf01c18818f7738e6b2670f1fd92f710ecb734"
+		},
+		{
+			"ImportPath": "github.com/joho/godotenv",
+			"Rev": "3505098f907089729105e928aebea45f0a643f20"
+		},
+		{
+			"ImportPath": "labix.org/v2/mgo",
+			"Comment": "252",
+			"Rev": "gustavo@niemeyer.net-20131119232418-x5g0b3u102m5on52"
+		}
+	]
+}
