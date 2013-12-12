@@ -91,16 +91,7 @@ func renderTemplate(w http.ResponseWriter, tmpl string, data interface{}) {
 //
 const SESSION_USER_ID_KEY string = "user-id"
 
-func userMiddleware(w http.ResponseWriter, r *http.Request, c martini.Context, session sessions.Session) {
-  isAuth, err := regexp.MatchString("^/auth/?", r.URL.Path)
-  if err != nil {
-    panic(err)
-  }
-  if isAuth {
-    c.Next()
-    return
-  }
-
+func authorize(w http.ResponseWriter, r *http.Request, c martini.Context, session sessions.Session) {
   userId := session.Get(SESSION_USER_ID_KEY)
   if userId == nil {
     log.Println("Unauthorized access")
@@ -109,7 +100,7 @@ func userMiddleware(w http.ResponseWriter, r *http.Request, c martini.Context, s
   }
 
   var user User
-  err = users.FindId(bson.ObjectIdHex(userId.(string))).One(&user)
+  err := users.FindId(bson.ObjectIdHex(userId.(string))).One(&user)
   if err != nil {
     log.Println("User not found")
     http.Redirect(w, r, "/auth", http.StatusFound)
@@ -117,8 +108,6 @@ func userMiddleware(w http.ResponseWriter, r *http.Request, c martini.Context, s
   }
 
   c.Map(&user)
-
-  c.Next()
 }
 
 func validateDate(w http.ResponseWriter, r *http.Request, params martini.Params) {
@@ -270,13 +259,15 @@ func authCallbackHandler(w http.ResponseWriter, r *http.Request, session session
 }
 
 func prepareRouter(m *martini.ClassicMartini) {
-  m.Get("/", rootHandler)
+  m.Get("/", authorize, rootHandler)
+
   m.Get("/auth", authHandler)
   m.Get("/auth/logout", authLogoutHandler)
   m.Get("/auth/callback", authCallbackHandler)
-  m.Get("/entries/:date", validateDate, viewHandler)
-  m.Post("/entries/:date", validateDate, saveHandler)
-  m.Get("/entries/:date/edit", validateDate, editHandler)
+
+  m.Get("/entries/:date", authorize, validateDate, viewHandler)
+  m.Post("/entries/:date", authorize, validateDate, saveHandler)
+  m.Get("/entries/:date/edit", authorize, validateDate, editHandler)
 }
 
 //
@@ -316,8 +307,6 @@ func main() {
 
   store := sessions.NewCookieStore([]byte(os.Getenv("SESSION_KEY")))
   m.Use(sessions.Sessions("default-session", store))
-
-  m.Use(userMiddleware)
 
   prepareRouter(m)
 
