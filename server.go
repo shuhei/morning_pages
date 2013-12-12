@@ -116,13 +116,14 @@ func makeHandler(fn func(http.ResponseWriter, *http.Request, string)) http.Handl
     session, _ := sessionStore.Get(r, SESSION_NAME)
     userId := session.Values[SESSION_USER_ID_KEY]
     if userId == nil {
+      log.Println("Unauthorized access")
       http.Redirect(w, r, "/auth", http.StatusFound)
       return
     }
     var user User
     err := users.FindId(bson.ObjectIdHex(userId.(string))).One(&user)
     if err != nil {
-      // REVIEW: Invalid user ID?
+      log.Println("User not found")
       http.Redirect(w, r, "/auth", http.StatusFound)
       return
     }
