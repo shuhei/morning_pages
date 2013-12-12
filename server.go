@@ -321,7 +321,7 @@ func main() {
     os.Exit(1)
   })
 
-  db := session.DB("morning_pages")
+  db := session.DB("") // Use database specified in the URL.
   entries = db.C("entries")
   users = db.C("users")
 
