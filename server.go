@@ -91,41 +91,51 @@ func renderTemplate(w http.ResponseWriter, tmpl string, data interface{}) {
 //
 const SESSION_USER_ID_KEY string = "user-id"
 
-func makeHandler(fn func(http.ResponseWriter, *http.Request, string, *User)) interface{} {
-  return func(w http.ResponseWriter, r *http.Request, params martini.Params, session sessions.Session) {
-    // Authenticate
-    // TODO: Extract middleware.
-    userId := session.Get(SESSION_USER_ID_KEY)
-    if userId == nil {
-      log.Println("Unauthorized access")
-      http.Redirect(w, r, "/auth", http.StatusFound)
-      return
-    }
+func userMiddleware(w http.ResponseWriter, r *http.Request, c martini.Context, session sessions.Session) {
+  isAuth, err := regexp.MatchString("^/auth/?", r.URL.Path)
+  if err != nil {
+    panic(err)
+  }
+  if isAuth {
+    c.Next()
+    return
+  }
 
-    var user User
-    err := users.FindId(bson.ObjectIdHex(userId.(string))).One(&user)
-    if err != nil {
-      log.Println("User not found")
-      http.Redirect(w, r, "/auth", http.StatusFound)
-      return
-    }
+  userId := session.Get(SESSION_USER_ID_KEY)
+  if userId == nil {
+    log.Println("Unauthorized access")
+    http.Redirect(w, r, "/auth", http.StatusFound)
+    return
+  }
 
-    date := params["date"]
-    matched, err := regexp.MatchString("[0-9]+-[0-9]+-[0-9]+", date)
-    if err != nil {
-      panic(err)
-    }
-    if !matched {
-      log.Println("Invalid date: %s", date)
-      http.Redirect(w, r, "/", http.StatusFound)
-      return
-    }
+  var user User
+  err = users.FindId(bson.ObjectIdHex(userId.(string))).One(&user)
+  if err != nil {
+    log.Println("User not found")
+    http.Redirect(w, r, "/auth", http.StatusFound)
+    return
+  }
 
-    fn(w, r, date, &user)
+  c.Map(&user)
+
+  c.Next()
+}
+
+func validateDate(w http.ResponseWriter, r *http.Request, params martini.Params) {
+  date := params["date"]
+  matched, err := regexp.MatchString("[0-9]+-[0-9]+-[0-9]+", date)
+  if err != nil {
+    panic(err)
+  }
+  if !matched {
+    log.Println("Invalid date: %s", date)
+    http.Redirect(w, r, "/", http.StatusFound)
+    return
   }
 }
 
-func viewHandler(w http.ResponseWriter, r *http.Request, date string, user *User) {
+func viewHandler(w http.ResponseWriter, r *http.Request, params martini.Params, user *User) {
+  date := params["date"]
   var entry Entry
   err := entries.Find(bson.M{"user_id": user.Id, "date": date}).One(&entry)
   if err != nil {
@@ -138,7 +148,8 @@ func viewHandler(w http.ResponseWriter, r *http.Request, date string, user *User
   renderTemplate(w, "view", data)
 }
 
-func editHandler(w http.ResponseWriter, r *http.Request, date string, user *User) {
+func editHandler(w http.ResponseWriter, r *http.Request, params martini.Params, user *User) {
+  date := params["date"]
   var entry Entry
   err := entries.Find(bson.M{"user_id": user.Id, "date": date}).One(&entry)
   if err != nil {
@@ -150,7 +161,8 @@ func editHandler(w http.ResponseWriter, r *http.Request, date string, user *User
   renderTemplate(w, "edit", data)
 }
 
-func saveHandler(w http.ResponseWriter, r *http.Request, date string, user *User) {
+func saveHandler(w http.ResponseWriter, r *http.Request, params martini.Params, user *User) {
+  date := params["date"]
   body := r.FormValue("body")
   _, err := entries.Upsert(bson.M{"date": date, "user_id": user.Id}, bson.M{"date": date, "user_id": user.Id, "body": body})
   if err != nil {
@@ -262,9 +274,9 @@ func prepareRouter(m *martini.ClassicMartini) {
   m.Get("/auth", authHandler)
   m.Get("/auth/logout", authLogoutHandler)
   m.Get("/auth/callback", authCallbackHandler)
-  m.Get("/entries/:date", makeHandler(viewHandler))
-  m.Post("/entries/:date", makeHandler(saveHandler))
-  m.Get("/entries/:date/edit", makeHandler(editHandler))
+  m.Get("/entries/:date", validateDate, viewHandler)
+  m.Post("/entries/:date", validateDate, saveHandler)
+  m.Get("/entries/:date/edit", validateDate, editHandler)
 }
 
 //
@@ -304,6 +316,8 @@ func main() {
 
   store := sessions.NewCookieStore([]byte(os.Getenv("SESSION_KEY")))
   m.Use(sessions.Sessions("default-session", store))
+
+  m.Use(userMiddleware)
 
   prepareRouter(m)
 
