@@ -17,9 +17,8 @@ import (
   "labix.org/v2/mgo"
   "labix.org/v2/mgo/bson"
   "github.com/joho/godotenv"
-  "github.com/gorilla/context"
-  "github.com/gorilla/mux"
-  "github.com/gorilla/sessions"
+  "github.com/codegangsta/martini"
+  "github.com/codegangsta/martini-contrib/sessions"
 )
 
 //
@@ -88,38 +87,21 @@ func renderTemplate(w http.ResponseWriter, tmpl string, data interface{}) {
 }
 
 //
-// Context
-//
-const CONTEXT_CURRENT_USER_KEY string = "current-user"
-
-func GetCurrentUser(r *http.Request) *User {
-  if user := context.Get(r, CONTEXT_CURRENT_USER_KEY); user != nil {
-    return user.(*User)
-  }
-  return nil
-}
-
-func SetCurrentUser(r *http.Request, user *User) {
-  context.Set(r, CONTEXT_CURRENT_USER_KEY, user)
-}
-
-//
 // Handlers
 //
-var sessionStore = sessions.NewCookieStore([]byte(os.Getenv("SESSION_KEY")))
-const SESSION_NAME string = "default-session"
 const SESSION_USER_ID_KEY string = "user-id"
 
-func makeHandler(fn func(http.ResponseWriter, *http.Request, string)) http.HandlerFunc {
-  return func(w http.ResponseWriter, r *http.Request) {
+func makeHandler(fn func(http.ResponseWriter, *http.Request, string, *User)) interface{} {
+  return func(w http.ResponseWriter, r *http.Request, params martini.Params, session sessions.Session) {
     // Authenticate
-    session, _ := sessionStore.Get(r, SESSION_NAME)
-    userId := session.Values[SESSION_USER_ID_KEY]
+    // TODO: Extract middleware.
+    userId := session.Get(SESSION_USER_ID_KEY)
     if userId == nil {
       log.Println("Unauthorized access")
       http.Redirect(w, r, "/auth", http.StatusFound)
       return
     }
+
     var user User
     err := users.FindId(bson.ObjectIdHex(userId.(string))).One(&user)
     if err != nil {
@@ -127,15 +109,23 @@ func makeHandler(fn func(http.ResponseWriter, *http.Request, string)) http.Handl
       http.Redirect(w, r, "/auth", http.StatusFound)
       return
     }
-    SetCurrentUser(r, &user)
 
-    date := mux.Vars(r)["date"]
-    fn(w, r, date)
+    date := params["date"]
+    matched, err := regexp.MatchString("[0-9]+-[0-9]+-[0-9]+", date)
+    if err != nil {
+      panic(err)
+    }
+    if !matched {
+      log.Println("Invalid date: %s", date)
+      http.Redirect(w, r, "/", http.StatusFound)
+      return
+    }
+
+    fn(w, r, date, &user)
   }
 }
 
-func viewHandler(w http.ResponseWriter, r *http.Request, date string) {
-  user := GetCurrentUser(r)
+func viewHandler(w http.ResponseWriter, r *http.Request, date string, user *User) {
   var entry Entry
   err := entries.Find(bson.M{"user_id": user.Id, "date": date}).One(&entry)
   if err != nil {
@@ -144,12 +134,11 @@ func viewHandler(w http.ResponseWriter, r *http.Request, date string) {
   }
   data := make(map[string]interface{})
   data["Entry"] = &entry
-  data["CurrentUser"] = GetCurrentUser(r)
+  data["CurrentUser"] = user
   renderTemplate(w, "view", data)
 }
 
-func editHandler(w http.ResponseWriter, r *http.Request, date string) {
-  user := GetCurrentUser(r)
+func editHandler(w http.ResponseWriter, r *http.Request, date string, user *User) {
   var entry Entry
   err := entries.Find(bson.M{"user_id": user.Id, "date": date}).One(&entry)
   if err != nil {
@@ -157,13 +146,12 @@ func editHandler(w http.ResponseWriter, r *http.Request, date string) {
   }
   data := make(map[string]interface{})
   data["Entry"] = &entry
-  data["CurrentUser"] = GetCurrentUser(r)
+  data["CurrentUser"] = user
   renderTemplate(w, "edit", data)
 }
 
-func saveHandler(w http.ResponseWriter, r *http.Request, date string) {
+func saveHandler(w http.ResponseWriter, r *http.Request, date string, user *User) {
   body := r.FormValue("body")
-  user := GetCurrentUser(r)
   _, err := entries.Upsert(bson.M{"date": date, "user_id": user.Id}, bson.M{"date": date, "user_id": user.Id, "body": body})
   if err != nil {
     http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -176,10 +164,6 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
   now := time.Now()
   today := fmt.Sprintf("%d-%d-%d", now.Year(), now.Month(), now.Day())
   http.Redirect(w, r, "/entries/" + today, http.StatusFound)
-}
-
-func staticHandler(w http.ResponseWriter, r *http.Request) {
-  http.ServeFile(w, r, "public" + r.URL.Path)
 }
 
 func redirectUrl() string {
@@ -199,15 +183,13 @@ func authHandler(w http.ResponseWriter, r *http.Request) {
   }
 }
 
-func authLogoutHandler(w http.ResponseWriter, r *http.Request) {
-  session, _ := sessionStore.Get(r, SESSION_NAME)
-  session.Values[SESSION_USER_ID_KEY] = nil
-  session.Save(r, w)
+func authLogoutHandler(w http.ResponseWriter, r *http.Request, session sessions.Session) {
+  session.Set(SESSION_USER_ID_KEY, nil)
   http.Redirect(w, r, "/auth", http.StatusFound)
 }
 
 // TODO: Split this looooong function.
-func authCallbackHandler(w http.ResponseWriter, r *http.Request) {
+func authCallbackHandler(w http.ResponseWriter, r *http.Request, session sessions.Session) {
   // TODO: Handle the case user cancelled logging in.
 
   appId := os.Getenv("FB_APP_ID")
@@ -270,26 +252,19 @@ func authCallbackHandler(w http.ResponseWriter, r *http.Request) {
     log.Println("Found a user", user.Id)
   }
 
-  // Save user id in session.
-  session, _ := sessionStore.Get(r, SESSION_NAME)
-  session.Values[SESSION_USER_ID_KEY] = user.Id.Hex()
-  session.Save(r, w)
+  session.Set(SESSION_USER_ID_KEY, user.Id.Hex())
 
   http.Redirect(w, r, "/", http.StatusFound)
 }
 
-func prepareRouter() *mux.Router {
-  r := mux.NewRouter()
-  datePattern := "{date:[0-9]+-[0-9]+-[0-9]+}"
-  r.HandleFunc("/", rootHandler).Methods("GET")
-  r.HandleFunc("/auth", authHandler)
-  r.HandleFunc("/auth/logout", authLogoutHandler)
-  r.HandleFunc("/auth/callback", authCallbackHandler)
-  r.HandleFunc("/entries/" + datePattern, makeHandler(viewHandler)).Methods("GET")
-  r.HandleFunc("/entries/" + datePattern, makeHandler(saveHandler)).Methods("POST")
-  r.HandleFunc("/entries/" + datePattern + "/edit", makeHandler(editHandler)).Methods("GET")
-  r.HandleFunc("/{filepath:.+}", staticHandler).Methods("GET")
-  return r
+func prepareRouter(m *martini.ClassicMartini) {
+  m.Get("/", rootHandler)
+  m.Get("/auth", authHandler)
+  m.Get("/auth/logout", authLogoutHandler)
+  m.Get("/auth/callback", authCallbackHandler)
+  m.Get("/entries/:date", makeHandler(viewHandler))
+  m.Post("/entries/:date", makeHandler(saveHandler))
+  m.Get("/entries/:date/edit", makeHandler(editHandler))
 }
 
 //
@@ -311,6 +286,8 @@ func main() {
     log.Println("Failed to load .env. Maybe on production?")
   }
 
+  m := martini.Classic()
+
   session, err := mgo.Dial(os.Getenv("MONGOHQ_URL"))
   if (err != nil) {
     log.Fatal(err)
@@ -325,12 +302,10 @@ func main() {
   entries = db.C("entries")
   users = db.C("users")
 
-  router := prepareRouter()
+  store := sessions.NewCookieStore([]byte(os.Getenv("SESSION_KEY")))
+  m.Use(sessions.Sessions("default-session", store))
 
-  port := os.Getenv("PORT")
-  if port == "" {
-    port = "5000"
-  }
-  log.Println("Listening on " + port)
-  http.ListenAndServe(":" + port, router)
+  prepareRouter(m)
+
+  m.Run()
 }
