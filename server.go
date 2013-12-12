@@ -258,7 +258,13 @@ func authCallbackHandler(w http.ResponseWriter, r *http.Request) {
   err = users.Find(bson.M{"uid": myId}).One(&user)
   if (err != nil) {
     user = User{Id: bson.NewObjectId(), Uid: myId, Name: myName}
-    _ = users.Insert(user)
+    err = users.Insert(user)
+    if (err != nil) {
+      log.Println("Failed to create a user")
+      log.Println(err)
+      http.Redirect(w, r, "/auth", http.StatusFound)
+      return
+    }
     log.Println("Created a new user", user.Id)
   } else {
     log.Println("Found a user", user.Id)
