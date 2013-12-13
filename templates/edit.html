@@ -1,4 +1,3 @@
-{{define "body"}}
 <h2>Editing {{.Entry.Date}}</h2>
 <form action="/entries/{{.Entry.Date}}" method="POST" class="form">
   <div class="form-group" id="entry-body">
@@ -20,4 +19,3 @@
     $charCount = $entryBody.find('.char-count');
   });
 </script>
-{{end}}

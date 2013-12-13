@@ -1,6 +1,4 @@
-{{define "body"}}
 <h2>{{.Entry.Date}}</h2>
 <p>[<a href="/entries/{{.Entry.Date}}/edit">edit</a>]</p>
 <div>{{.Entry.Body | linebreak | unsafe}}</div>
 <p class="pull-right"><span class="char-count">{{charCount .Entry.Body}}</span> characters</p>
-{{end}}

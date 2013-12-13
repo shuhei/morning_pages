@@ -19,6 +19,7 @@ import (
   "github.com/joho/godotenv"
   "github.com/codegangsta/martini"
   "github.com/codegangsta/martini-contrib/sessions"
+  "github.com/codegangsta/martini-contrib/render"
 )
 
 //
@@ -48,7 +49,6 @@ func unsafe(str string) template.HTML {
 }
 
 var linebreakPattern, _ = regexp.Compile("\r?\n")
-
 func linebreak(str string) string {
   // REVIEW: Should I use []byte instead of string?
   return string(linebreakPattern.ReplaceAll([]byte(str), []byte("<br>")))
@@ -57,32 +57,6 @@ func linebreak(str string) string {
 func charCount(str string) int {
   withoutCr := strings.Replace(str, "\r\n", "\n", -1)
   return utf8.RuneCountInString(withoutCr)
-}
-
-type TemplateMap map[string]*template.Template
-
-func prepareTemplates(filenames ...string) TemplateMap {
-  funcMap := template.FuncMap {
-    "unsafe": unsafe,
-    "linebreak": linebreak,
-    "charCount": charCount,
-  }
-  tmpls := make(TemplateMap)
-  for _, filename := range filenames {
-    files := []string{"views/" + filename, "views/layout.html"}
-    tmpls[filename] = template.Must(template.New("").Funcs(funcMap).ParseFiles(files...))
-  }
-  return tmpls
-}
-
-var templates = prepareTemplates("edit.html", "view.html", "auth.html")
-
-func renderTemplate(w http.ResponseWriter, tmpl string, data interface{}) {
-  err := templates[tmpl + ".html"].ExecuteTemplate(w, "layout", data)
-  if err != nil {
-    http.Error(w, err.Error(), http.StatusInternalServerError)
-    return
-  }
 }
 
 //
@@ -122,7 +96,8 @@ func validateDate(w http.ResponseWriter, r *http.Request, params martini.Params)
   }
 }
 
-func viewHandler(w http.ResponseWriter, r *http.Request, db *mgo.Database, params martini.Params, user *User) {
+// TODO: Reduce arguments. Can't I redirect without w and req?
+func viewHandler(w http.ResponseWriter, r *http.Request, ren render.Render, db *mgo.Database, params martini.Params, user *User) {
   date := params["date"]
   var entry Entry
   err := db.C(ENTRY_COLLECTION_NAME).Find(bson.M{"user_id": user.Id, "date": date}).One(&entry)
@@ -133,10 +108,10 @@ func viewHandler(w http.ResponseWriter, r *http.Request, db *mgo.Database, param
   data := make(map[string]interface{})
   data["Entry"] = &entry
   data["CurrentUser"] = user
-  renderTemplate(w, "view", data)
+  ren.HTML(200, "view", data)
 }
 
-func editHandler(w http.ResponseWriter, r *http.Request, db *mgo.Database, params martini.Params, user *User) {
+func editHandler(r render.Render, db *mgo.Database, params martini.Params, user *User) {
   date := params["date"]
   var entry Entry
   err := db.C(ENTRY_COLLECTION_NAME).Find(bson.M{"user_id": user.Id, "date": date}).One(&entry)
@@ -146,7 +121,7 @@ func editHandler(w http.ResponseWriter, r *http.Request, db *mgo.Database, param
   data := make(map[string]interface{})
   data["Entry"] = &entry
   data["CurrentUser"] = user
-  renderTemplate(w, "edit", data)
+  r.HTML(200, "edit", data)
 }
 
 func saveHandler(w http.ResponseWriter, r *http.Request, db *mgo.Database, params martini.Params, user *User) {
@@ -172,16 +147,12 @@ func redirectUrl() string {
   return fmt.Sprintf("%s/auth/callback", host)
 }
 
-func authHandler(w http.ResponseWriter, r *http.Request) {
+func authHandler(r render.Render) {
   appId := os.Getenv("FB_APP_ID")
   dialogUrl := fmt.Sprintf("https://www.facebook.com/dialog/oauth?client_id=%s&redirect_uri=%s", appId, redirectUrl())
   data := make(map[string]interface{})
   data["FacebookUrl"] = dialogUrl
-  err := templates["auth.html"].ExecuteTemplate(w, "layout", data)
-  if err != nil {
-    http.Error(w, err.Error(), http.StatusInternalServerError)
-    return
-  }
+  r.HTML(200, "auth", data)
 }
 
 func authLogoutHandler(w http.ResponseWriter, r *http.Request, session sessions.Session) {
@@ -291,6 +262,9 @@ func main() {
 
   m := martini.Classic()
 
+  //
+  // Database
+  //
   session, err := mgo.Dial(os.Getenv("MONGOHQ_URL"))
   if (err != nil) {
     log.Fatal(err)
@@ -304,8 +278,26 @@ func main() {
   db := session.DB("") // Use database specified in the URL.
   m.Map(db)
 
+  //
+  // Session
+  //
   store := sessions.NewCookieStore([]byte(os.Getenv("SESSION_KEY")))
   m.Use(sessions.Sessions("default-session", store))
+
+  //
+  // Template
+  //
+  funcMap := template.FuncMap {
+    "unsafe": unsafe,
+    "linebreak": linebreak,
+    "charCount": charCount,
+  }
+  m.Use(render.Renderer(render.Options{
+    Directory: "templates",
+    Extensions: []string{".html"},
+    Funcs: []template.FuncMap{funcMap},
+    Layout: "layout",
+  }))
 
   prepareRouter(m)
 

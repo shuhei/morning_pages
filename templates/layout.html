@@ -1,4 +1,4 @@
-{{define "layout"}}<!DOCTYPE html>
+<!DOCTYPE html>
 <html>
   <head>
     <meta charset="utf-8">
@@ -24,7 +24,7 @@
       </div>
       <div class="row">
         <div class="col-md-12">
-          {{template "body" .}}
+          {{ yield }}
         </div>
       </div>
     </div>
@@ -37,4 +37,3 @@
     </footer>
   </body>
 </html>
-{{end}}
