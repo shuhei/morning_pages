@@ -24,6 +24,9 @@ import (
 //
 // Models
 //
+const ENTRY_COLLECTION_NAME = "entries"
+const USER_COLLECTION_NAME = "users"
+
 type Entry struct {
   Id     bson.ObjectId `bson:"_id"`
   Date   string        `bson:"date"`
@@ -31,15 +34,11 @@ type Entry struct {
   UserId bson.ObjectId `bson:"user_id"`
 }
 
-var entries *mgo.Collection
-
 type User struct {
   Id    bson.ObjectId `bson:"_id"`
   Uid   string        `bson:"uid"`
   Name  string        `bson:"name"`
 }
-
-var users *mgo.Collection
 
 //
 // Template
@@ -91,7 +90,7 @@ func renderTemplate(w http.ResponseWriter, tmpl string, data interface{}) {
 //
 const SESSION_USER_ID_KEY string = "user-id"
 
-func authorize(w http.ResponseWriter, r *http.Request, c martini.Context, session sessions.Session) {
+func authorize(w http.ResponseWriter, r *http.Request, db *mgo.Database, c martini.Context, session sessions.Session) {
   userId := session.Get(SESSION_USER_ID_KEY)
   if userId == nil {
     log.Println("Unauthorized access")
@@ -100,7 +99,7 @@ func authorize(w http.ResponseWriter, r *http.Request, c martini.Context, sessio
   }
 
   var user User
-  err := users.FindId(bson.ObjectIdHex(userId.(string))).One(&user)
+  err := db.C(USER_COLLECTION_NAME).FindId(bson.ObjectIdHex(userId.(string))).One(&user)
   if err != nil {
     log.Println("User not found")
     http.Redirect(w, r, "/auth", http.StatusFound)
@@ -123,10 +122,10 @@ func validateDate(w http.ResponseWriter, r *http.Request, params martini.Params)
   }
 }
 
-func viewHandler(w http.ResponseWriter, r *http.Request, params martini.Params, user *User) {
+func viewHandler(w http.ResponseWriter, r *http.Request, db *mgo.Database, params martini.Params, user *User) {
   date := params["date"]
   var entry Entry
-  err := entries.Find(bson.M{"user_id": user.Id, "date": date}).One(&entry)
+  err := db.C(ENTRY_COLLECTION_NAME).Find(bson.M{"user_id": user.Id, "date": date}).One(&entry)
   if err != nil {
     http.Redirect(w, r, "/entries/" + date + "/edit", http.StatusFound)
     return
@@ -137,10 +136,10 @@ func viewHandler(w http.ResponseWriter, r *http.Request, params martini.Params, 
   renderTemplate(w, "view", data)
 }
 
-func editHandler(w http.ResponseWriter, r *http.Request, params martini.Params, user *User) {
+func editHandler(w http.ResponseWriter, r *http.Request, db *mgo.Database, params martini.Params, user *User) {
   date := params["date"]
   var entry Entry
-  err := entries.Find(bson.M{"user_id": user.Id, "date": date}).One(&entry)
+  err := db.C(ENTRY_COLLECTION_NAME).Find(bson.M{"user_id": user.Id, "date": date}).One(&entry)
   if err != nil {
     entry = Entry{Id: bson.NewObjectId(), Date: date, Body: "", UserId: user.Id}
   }
@@ -150,10 +149,11 @@ func editHandler(w http.ResponseWriter, r *http.Request, params martini.Params, 
   renderTemplate(w, "edit", data)
 }
 
-func saveHandler(w http.ResponseWriter, r *http.Request, params martini.Params, user *User) {
+func saveHandler(w http.ResponseWriter, r *http.Request, db *mgo.Database, params martini.Params, user *User) {
   date := params["date"]
-  body := r.FormValue("body")
-  _, err := entries.Upsert(bson.M{"date": date, "user_id": user.Id}, bson.M{"date": date, "user_id": user.Id, "body": body})
+  query := bson.M{"date": date, "user_id": user.Id}
+  entry := bson.M{"date": date, "user_id": user.Id, "body": r.FormValue("body")}
+  _, err := db.C(ENTRY_COLLECTION_NAME).Upsert(query, entry)
   if err != nil {
     http.Error(w, err.Error(), http.StatusInternalServerError)
     return
@@ -190,7 +190,7 @@ func authLogoutHandler(w http.ResponseWriter, r *http.Request, session sessions.
 }
 
 // TODO: Split this looooong function.
-func authCallbackHandler(w http.ResponseWriter, r *http.Request, session sessions.Session) {
+func authCallbackHandler(w http.ResponseWriter, r *http.Request, db *mgo.Database, session sessions.Session) {
   // TODO: Handle the case user cancelled logging in.
 
   appId := os.Getenv("FB_APP_ID")
@@ -238,10 +238,10 @@ func authCallbackHandler(w http.ResponseWriter, r *http.Request, session session
   myName := myInfo["name"].(string)
 
   var user User
-  err = users.Find(bson.M{"uid": myId}).One(&user)
+  err = db.C(USER_COLLECTION_NAME).Find(bson.M{"uid": myId}).One(&user)
   if (err != nil) {
     user = User{Id: bson.NewObjectId(), Uid: myId, Name: myName}
-    err = users.Insert(user)
+    err = db.C(USER_COLLECTION_NAME).Insert(user)
     if (err != nil) {
       log.Println("Failed to create a user")
       log.Println(err)
@@ -302,8 +302,7 @@ func main() {
   })
 
   db := session.DB("") // Use database specified in the URL.
-  entries = db.C("entries")
-  users = db.C("users")
+  m.Map(db)
 
   store := sessions.NewCookieStore([]byte(os.Getenv("SESSION_KEY")))
   m.Use(sessions.Sessions("default-session", store))
