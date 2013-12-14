@@ -14,13 +14,21 @@
     </style>
   </head>
   <body>
-    <div class="container">
-      <div class="page-header">
-        <h1><a href="/">Morning Pages</a>{{if .CurrentUser}} <small>Hi, {{.CurrentUser.Name}}! {{end}}</small></h1>
+    <header class="navbar navbar-default navbar-static-top">
+      <div class="container">
+        <div class="navbar-header">
+          <a class="navbar-brand" href="/">Morning Pages</a>
+        </div>
         {{if .CurrentUser}}
-          <p><a href="/auth/logout">Log out</a></p>
+          <p class="navbar-text">Hi, {{.CurrentUser.Name}}!</p>
+          <ul class="nav navbar-nav navbar-right">
+            <li><a href="/auth/logout">Log out</a></li>
+          </ul>
         {{end}}
       </div>
+    </header>
+
+    <div class="container">
       <div class="row">
         <div class="col-md-12">
           {{ yield }}
