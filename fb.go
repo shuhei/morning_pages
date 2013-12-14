@@ -38,7 +38,7 @@ func accessTokenUrl(fb *FacebookAuth, code string) string {
 	return baseUrl + params.Encode()
 }
 
-func authHandler(r render.Render) {
+func showLogin(r render.Render) {
 	appId := os.Getenv("FB_APP_ID")
 	dialogUrl := fmt.Sprintf("https://www.facebook.com/dialog/oauth?client_id=%s&redirect_uri=%s", appId, redirectUrl())
 	data := make(map[string]interface{})
@@ -46,7 +46,7 @@ func authHandler(r render.Render) {
 	r.HTML(200, "auth", data)
 }
 
-func authLogoutHandler(w http.ResponseWriter, r *http.Request, session sessions.Session) {
+func logout(w http.ResponseWriter, r *http.Request, session sessions.Session) {
 	session.Set(SESSION_USER_ID_KEY, nil)
 	http.Redirect(w, r, "/auth", http.StatusFound)
 }
