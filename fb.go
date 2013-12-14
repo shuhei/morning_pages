@@ -8,7 +8,6 @@ import (
 	"github.com/codegangsta/martini-contrib/sessions"
 	"io/ioutil"
 	"labix.org/v2/mgo"
-	"labix.org/v2/mgo/bson"
 	"log"
 	"net/http"
 	"net/url"
@@ -21,11 +20,6 @@ type FacebookAuth struct {
 }
 
 type FacebookToken string
-
-type FacebookUser struct {
-	Id   string
-	Name string
-}
 
 func redirectUrl() string {
 	host := os.Getenv("FB_REDIRECT_URL")
@@ -113,11 +107,9 @@ func getUserInfo(w http.ResponseWriter, token FacebookToken, c martini.Context) 
 }
 
 func findOrCreateUser(w http.ResponseWriter, r *http.Request, fbUser *FacebookUser, db *mgo.Database, session sessions.Session) {
-	var user User
-	err := db.C(USER_COLLECTION_NAME).Find(bson.M{"uid": fbUser.Id}).One(&user)
+	user, err := findFacebookUser(db, fbUser)
 	if err != nil {
-		user = User{Id: bson.NewObjectId(), Uid: fbUser.Id, Name: fbUser.Name}
-		err = db.C(USER_COLLECTION_NAME).Insert(user)
+		user, err := insertFacebookUser(db, fbUser)
 		if err != nil {
 			log.Println("Failed to create a user")
 			log.Println(err)

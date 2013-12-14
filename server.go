@@ -8,7 +8,6 @@ import (
 	"github.com/joho/godotenv"
 	"html/template"
 	"labix.org/v2/mgo"
-	"labix.org/v2/mgo/bson"
 	"log"
 	"net/http"
 	"os"
@@ -18,46 +17,26 @@ import (
 )
 
 //
-// Models
-//
-const ENTRY_COLLECTION_NAME = "entries"
-const USER_COLLECTION_NAME = "users"
-
-type Entry struct {
-	Id     bson.ObjectId `bson:"_id"`
-	Date   string        `bson:"date"`
-	Body   string        `bson:"body"`
-	UserId bson.ObjectId `bson:"user_id"`
-}
-
-type User struct {
-	Id   bson.ObjectId `bson:"_id"`
-	Uid  string        `bson:"uid"`
-	Name string        `bson:"name"`
-}
-
-//
 // Handlers
 //
 const SESSION_USER_ID_KEY string = "user-id"
 
-func authorize(w http.ResponseWriter, r *http.Request, db *mgo.Database, c martini.Context, session sessions.Session) {
+func authorize(w http.ResponseWriter, r *http.Request, db *mgo.Database, c martini.Context, session sessions.Session, l *log.Logger) {
 	userId := session.Get(SESSION_USER_ID_KEY)
 	if userId == nil {
-		log.Println("Unauthorized access")
+		l.Println("Unauthorized access")
 		http.Redirect(w, r, "/auth", http.StatusFound)
 		return
 	}
 
-	var user User
-	err := db.C(USER_COLLECTION_NAME).FindId(bson.ObjectIdHex(userId.(string))).One(&user)
+	user, err := findUserById(db, userId.(string))
 	if err != nil {
-		log.Println("User not found")
+		l.Println("User not found")
 		http.Redirect(w, r, "/auth", http.StatusFound)
 		return
 	}
 
-	c.Map(&user)
+	c.Map(user)
 }
 
 func validateDate(w http.ResponseWriter, r *http.Request, params martini.Params) {
@@ -67,7 +46,7 @@ func validateDate(w http.ResponseWriter, r *http.Request, params martini.Params)
 		panic(err)
 	}
 	if !matched {
-		log.Println("Invalid date: %s", date)
+		log.Println("Invalid date:", date)
 		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
@@ -82,36 +61,33 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 // TODO: Reduce arguments. Can't I redirect without w and req?
 func showEntry(w http.ResponseWriter, r *http.Request, ren render.Render, db *mgo.Database, params martini.Params, user *User) {
 	date := params["date"]
-	var entry Entry
-	err := db.C(ENTRY_COLLECTION_NAME).Find(bson.M{"user_id": user.Id, "date": date}).One(&entry)
+	entry, err := findEntry(db, user, date)
 	if err != nil {
 		http.Redirect(w, r, "/entries/"+date+"/edit", http.StatusFound)
 		return
 	}
 	data := make(map[string]interface{})
-	data["Entry"] = &entry
+	data["Entry"] = entry
 	data["CurrentUser"] = user
 	ren.HTML(200, "view", data)
 }
 
 func editEntry(r render.Render, db *mgo.Database, params martini.Params, user *User) {
 	date := params["date"]
-	var entry Entry
-	err := db.C(ENTRY_COLLECTION_NAME).Find(bson.M{"user_id": user.Id, "date": date}).One(&entry)
+	entry, err := findEntry(db, user, date)
 	if err != nil {
-		entry = Entry{Id: bson.NewObjectId(), Date: date, Body: "", UserId: user.Id}
+		entry = newEntry(user, date)
 	}
 	data := make(map[string]interface{})
-	data["Entry"] = &entry
+	data["Entry"] = entry
 	data["CurrentUser"] = user
 	r.HTML(200, "edit", data)
 }
 
 func saveEntry(w http.ResponseWriter, r *http.Request, db *mgo.Database, params martini.Params, user *User) {
 	date := params["date"]
-	query := bson.M{"date": date, "user_id": user.Id}
-	entry := bson.M{"date": date, "user_id": user.Id, "body": r.FormValue("body")}
-	_, err := db.C(ENTRY_COLLECTION_NAME).Upsert(query, entry)
+	body := r.FormValue("body")
+	err := upsertEntry(db, user, date, body)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
