@@ -1,8 +1,13 @@
 <ul class="mp-entry-index">
   {{$entry := .Entry}}
-  {{range .Entries}}
+  {{.HasEntry}}
+  {{range .EntryDates}}
     {{if eq .Date $entry.Date}}
       <li><span class="mp-date-active">{{extractDay .Date}}</span></li>
+    {{else if .IsFuture}}
+      <li><span class="mp-date-future">{{extractDay .Date}}</span></li>
+    {{else if not .HasEntry}}
+      <li><span class="mp-date-future">{{extractDay .Date}}</span></li>
     {{else}}
       <li><a href="/entries/{{.Date}}">{{extractDay .Date}}</a></li>
     {{end}}

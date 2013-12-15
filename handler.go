@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/codegangsta/martini"
 	"github.com/codegangsta/martini-contrib/render"
 	"github.com/codegangsta/martini-contrib/sessions"
@@ -12,15 +11,6 @@ import (
 )
 
 const SESSION_USER_ID_KEY string = "user-id"
-
-func dateString(t time.Time) string {
-	return fmt.Sprintf("%04d-%02d-%02d", t.Year(), t.Month(), t.Day())
-}
-
-func isValidDate(date string) bool {
-	_, err := time.ParseInLocation("2006-01-02", date, time.Local)
-	return err == nil
-}
 
 //
 // Filters
@@ -57,7 +47,7 @@ func validateDate(w http.ResponseWriter, r *http.Request, params martini.Params)
 //
 
 func rootHandler(w http.ResponseWriter, r *http.Request) {
-	today := dateString(time.Now())
+	today := dateStringOfTime(time.Now())
 	http.Redirect(w, r, "/entries/"+today, http.StatusFound)
 }
 
@@ -69,7 +59,9 @@ func showEntry(w http.ResponseWriter, r *http.Request, ren render.Render, db *mg
 		http.Redirect(w, r, "/entries/"+date+"/edit", http.StatusFound)
 		return
 	}
-	entries, err := findEntries(db, user)
+
+	now := time.Now()
+	dates, err := findEntryDates(db, user, now)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -77,7 +69,7 @@ func showEntry(w http.ResponseWriter, r *http.Request, ren render.Render, db *mg
 
 	data := make(map[string]interface{})
 	data["Entry"] = entry
-	data["Entries"] = entries
+	data["EntryDates"] = dates
 	data["CurrentUser"] = user
 	ren.HTML(200, "view", data)
 }

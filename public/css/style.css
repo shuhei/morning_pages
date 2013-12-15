@@ -4,31 +4,33 @@
 }
 .mp-entry-index li {
   display: inline;
+  font-size: 12px;
 }
 .mp-entry-index li a,
 .mp-entry-index li span {
+  display: inline-block;
   width: 24px;
   height: 24px;
-  display: inline-block;
+  border-radius: 12px;
+  color: #fff;
   text-align: center;
   line-height: 24px;
-  border-radius: 12px;
 }
 .mp-entry-index li a {
   background: #cde;
-  color: #fff;
 }
+.mp-date-active,
 .mp-entry-index li a:hover {
-  background: #999;
+  background: #789;
   text-decoration: none;
 }
-.mp-date-active {
+.mp-date-future {
   background: #eee;
 }
 
 /* footer */
 .mp-footer {
-  border-top: 1px solid #eeeeee;
-  padding-top: 20px;
   margin: 40px 0 20px;
+  padding-top: 20px;
+  border-top: 1px solid #eeeeee;
 }
