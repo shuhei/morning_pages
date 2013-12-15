@@ -18,7 +18,7 @@ const SESSION_USER_ID_KEY string = "user-id"
 
 func authorize(w http.ResponseWriter, r *http.Request, db *mgo.Database, c martini.Context, session sessions.Session, l *log.Logger) {
 	userId := session.Get(SESSION_USER_ID_KEY)
-	if userId == nil {
+	if userId == nil || userId == "" {
 		l.Println("Unauthorized access")
 		http.Redirect(w, r, "/auth", http.StatusFound)
 		return
@@ -27,6 +27,7 @@ func authorize(w http.ResponseWriter, r *http.Request, db *mgo.Database, c marti
 	user, err := findUserById(db, userId.(string))
 	if err != nil {
 		l.Println("User not found")
+		session.Delete(SESSION_USER_ID_KEY)
 		http.Redirect(w, r, "/auth", http.StatusFound)
 		return
 	}
