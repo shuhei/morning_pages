@@ -12,7 +12,7 @@ func Test_dateString_pad(t *testing.T) {
 	d := time.Date(2013, 7, 8, 0, 0, 0, 0, time.Local)
 	expected := "2013-07-08"
 	if s := dateString(d); s != expected {
-		t.Errorf("Expected %s but was %s", expected, s)
+		t.Errorf("Expected %s but got %s", expected, s)
 	}
 }
 
@@ -20,7 +20,7 @@ func Test_dateString_eod(t *testing.T) {
 	d := time.Date(2013, 7, 8, 23, 59, 59, 999, time.Local)
 	expected := "2013-07-08"
 	if s := dateString(d); s != expected {
-		t.Errorf("Expected %s but was %s", expected, s)
+		t.Errorf("Expected %s but got %s", expected, s)
 	}
 }
 
@@ -51,7 +51,7 @@ func Test_rootHandler(t *testing.T) {
 
 	found := 302
 	if w.Code != found {
-		t.Errorf("Expected %d but was %d", found, w.Code)
+		t.Errorf("Expected %d but got %d", found, w.Code)
 	}
 
 	pattern := "/entries/\\d{4}-\\d{2}-\\d{2}"

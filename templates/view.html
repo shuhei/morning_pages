@@ -1,11 +1,13 @@
-{{$entry := .Entry}}
-{{range .Entries}}
-  {{if eq .Date $entry.Date}}
-    <span class="mp-date-active">{{.Date}}</span>
-  {{else}}
-    <a href="/entries/{{.Date}}">{{.Date}}</a>
+<ul class="mp-entry-index">
+  {{$entry := .Entry}}
+  {{range .Entries}}
+    {{if eq .Date $entry.Date}}
+      <li><span class="mp-date-active">{{extractDay .Date}}</span></li>
+    {{else}}
+      <li><a href="/entries/{{.Date}}">{{extractDay .Date}}</a></li>
+    {{end}}
   {{end}}
-{{end}}
+</ul>
 
 <h2>{{.Entry.Date}}</h2>
 <p>[<a href="/entries/{{.Entry.Date}}/edit">edit</a>]</p>

@@ -1,0 +1,34 @@
+/* entry index */
+.mp-entry-index {
+  padding-left: 0;
+}
+.mp-entry-index li {
+  display: inline;
+}
+.mp-entry-index li a,
+.mp-entry-index li span {
+  width: 24px;
+  height: 24px;
+  display: inline-block;
+  text-align: center;
+  line-height: 24px;
+  border-radius: 12px;
+}
+.mp-entry-index li a {
+  background: #cde;
+  color: #fff;
+}
+.mp-entry-index li a:hover {
+  background: #999;
+  text-decoration: none;
+}
+.mp-date-active {
+  background: #eee;
+}
+
+/* footer */
+.mp-footer {
+  border-top: 1px solid #eeeeee;
+  padding-top: 20px;
+  margin: 40px 0 20px;
+}

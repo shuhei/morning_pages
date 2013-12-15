@@ -23,11 +23,17 @@ func charCount(str string) int {
 	return utf8.RuneCountInString(withoutCr)
 }
 
+func extractDay(str string) string {
+	day := strings.Split(str, "-")[2]
+	return strings.TrimLeft(day, "0")
+}
+
 func templateFuncs() []template.FuncMap {
 	funcMap := template.FuncMap{
-		"unsafe":    unsafe,
-		"linebreak": linebreak,
-		"charCount": charCount,
+		"unsafe":     unsafe,
+		"linebreak":  linebreak,
+		"charCount":  charCount,
+		"extractDay": extractDay,
 	}
 	return []template.FuncMap{funcMap}
 }
