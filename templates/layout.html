@@ -17,13 +17,21 @@
     <header class="navbar navbar-default navbar-static-top">
       <div class="container">
         <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#mp-navbar-collapse">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
           <a class="navbar-brand" href="/">Morning Pages</a>
         </div>
         {{if .CurrentUser}}
-          <p class="navbar-text">Hi, {{.CurrentUser.Name}}!</p>
-          <ul class="nav navbar-nav navbar-right">
-            <li><a href="/auth/logout">Log out</a></li>
-          </ul>
+          <div class="collapse navbar-collapse" id="mp-navbar-collapse">
+            <p class="navbar-text">Hi, {{.CurrentUser.Name}}!</p>
+            <ul class="nav navbar-nav navbar-right">
+              <li><a href="/auth/logout">Log out</a></li>
+            </ul>
+          </div>
         {{end}}
       </div>
     </header>
