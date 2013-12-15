@@ -109,7 +109,7 @@ func getUserInfo(w http.ResponseWriter, token FacebookToken, c martini.Context) 
 func findOrCreateUser(w http.ResponseWriter, r *http.Request, fbUser *FacebookUser, db *mgo.Database, session sessions.Session) {
 	user, err := findFacebookUser(db, fbUser)
 	if err != nil {
-		user, err := insertFacebookUser(db, fbUser)
+		user, err = insertFacebookUser(db, fbUser)
 		if err != nil {
 			log.Println("Failed to create a user")
 			log.Println(err)
