@@ -5,7 +5,6 @@ import (
 	"github.com/codegangsta/martini-contrib/render"
 	"github.com/codegangsta/martini-contrib/sessions"
 	"github.com/joho/godotenv"
-	"html/template"
 	"labix.org/v2/mgo"
 	"log"
 	"os"
@@ -68,15 +67,10 @@ func main() {
 	//
 	// Template
 	//
-	funcMap := template.FuncMap{
-		"unsafe":    unsafe,
-		"linebreak": linebreak,
-		"charCount": charCount,
-	}
 	m.Use(render.Renderer(render.Options{
 		Directory:  "templates",
 		Extensions: []string{".html"},
-		Funcs:      []template.FuncMap{funcMap},
+		Funcs:      templateFuncs(),
 		Layout:     "layout",
 	}))
 

@@ -54,6 +54,12 @@ func findEntry(db *mgo.Database, user *User, date string) (*Entry, error) {
 	return &entry, err
 }
 
+func findEntries(db *mgo.Database, user *User) (*[]Entry, error) {
+	var entries []Entry
+	err := db.C(EntryCollectionName).Find(bson.M{"user_id": user.Id}).Sort("date").All(&entries)
+	return &entries, err
+}
+
 func upsertEntry(db *mgo.Database, user *User, date string, body string) error {
 	query := bson.M{"date": date, "user_id": user.Id}
 	entry := bson.M{"date": date, "user_id": user.Id, "body": body}

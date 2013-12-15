@@ -8,11 +8,19 @@ import (
 	"labix.org/v2/mgo"
 	"log"
 	"net/http"
-	"regexp"
 	"time"
 )
 
 const SESSION_USER_ID_KEY string = "user-id"
+
+func dateString(t time.Time) string {
+	return fmt.Sprintf("%04d-%02d-%02d", t.Year(), t.Month(), t.Day())
+}
+
+func isValidDate(date string) bool {
+	_, err := time.ParseInLocation("2006-01-02", date, time.Local)
+	return err == nil
+}
 
 //
 // Filters
@@ -38,13 +46,8 @@ func authorize(w http.ResponseWriter, r *http.Request, db *mgo.Database, c marti
 
 func validateDate(w http.ResponseWriter, r *http.Request, params martini.Params) {
 	date := params["date"]
-	matched, err := regexp.MatchString("[0-9]+-[0-9]+-[0-9]+", date)
-	if err != nil {
-		panic(err)
-	}
-	if !matched {
-		log.Println("Invalid date:", date)
-		http.Redirect(w, r, "/", http.StatusFound)
+	if !isValidDate(date) {
+		http.Error(w, "Invalid date. e.g. 2014-01-02", http.StatusBadRequest)
 		return
 	}
 }
@@ -54,8 +57,7 @@ func validateDate(w http.ResponseWriter, r *http.Request, params martini.Params)
 //
 
 func rootHandler(w http.ResponseWriter, r *http.Request) {
-	now := time.Now()
-	today := fmt.Sprintf("%d-%d-%d", now.Year(), now.Month(), now.Day())
+	today := dateString(time.Now())
 	http.Redirect(w, r, "/entries/"+today, http.StatusFound)
 }
 
@@ -67,8 +69,15 @@ func showEntry(w http.ResponseWriter, r *http.Request, ren render.Render, db *mg
 		http.Redirect(w, r, "/entries/"+date+"/edit", http.StatusFound)
 		return
 	}
+	entries, err := findEntries(db, user)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	data := make(map[string]interface{})
 	data["Entry"] = entry
+	data["Entries"] = entries
 	data["CurrentUser"] = user
 	ren.HTML(200, "view", data)
 }
@@ -79,6 +88,7 @@ func editEntry(r render.Render, db *mgo.Database, params martini.Params, user *U
 	if err != nil {
 		entry = newEntry(user, date)
 	}
+
 	data := make(map[string]interface{})
 	data["Entry"] = entry
 	data["CurrentUser"] = user

@@ -22,3 +22,12 @@ func charCount(str string) int {
 	withoutCr := strings.Replace(str, "\r\n", "\n", -1)
 	return utf8.RuneCountInString(withoutCr)
 }
+
+func templateFuncs() []template.FuncMap {
+	funcMap := template.FuncMap{
+		"unsafe":    unsafe,
+		"linebreak": linebreak,
+		"charCount": charCount,
+	}
+	return []template.FuncMap{funcMap}
+}
