@@ -4,6 +4,8 @@ A [Morning Pages](http://juliacameronlive.com/basic-tools/morning-pages/) app fo
 
 *Absolutely work in progress!!!*
 
+[![Build Status](https://travis-ci.org/shuhei/morning_pages.png)](https://travis-ci.org/shuhei/morning_pages)
+
 ## Installation
 
 1. Install Go.
