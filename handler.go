@@ -48,7 +48,13 @@ func validateDate(w http.ResponseWriter, r *http.Request, params martini.Params)
 //
 
 func rootHandler(w http.ResponseWriter, r *http.Request) {
-	today := dateStringOfTime(time.Now())
+	// TODO: Use user's timezone.
+	tokyo, err := time.LoadLocation("Asia/Tokyo")
+	if err != nil {
+		http.Error(w, "Failed to load location", http.StatusInternalServerError)
+	}
+	timeInTokyo := time.Now().In(tokyo)
+	today := dateStringOfTime(timeInTokyo)
 	http.Redirect(w, r, "/entries/"+today, http.StatusFound)
 }
 
