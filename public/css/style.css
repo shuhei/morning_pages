@@ -28,6 +28,17 @@
   background: #eee;
 }
 
+/* entry form */
+#mp-entry-status {
+  padding-left: 12px;
+}
+#mp-entry-status .fa-check {
+  color: #1d9c73;
+}
+#mp-entry-status .fa-pencil {
+  color: #d74a38;
+}
+
 /* footer */
 .mp-footer {
   margin: 40px 0 20px;

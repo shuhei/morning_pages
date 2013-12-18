@@ -6,8 +6,8 @@ jQuery(function ($) {
     updateCount();
   });
   var $textarea = $entryBody.find('textarea');
-  var $charCount = $entryBody.find('.char-count');
-  var $saveButton = $('.mp-save-button');
+  var $charCount = $('#mp-char-count');
+  var $status = $('#mp-entry-status');
 
   function updateCount() {
     var count = $textarea.val().length;
@@ -15,13 +15,15 @@ jQuery(function ($) {
   }
 
   function becomeDirty() {
+    if (isDirty) return;
     isDirty = true;
-    $saveButton.removeClass('disabled');
+    $status.html('<i class="fa fa-pencil"></i> Unsaved')
   }
 
   function becomeClean() {
+    if (!isDirty) return;
     isDirty = false;
-    $saveButton.addClass('disabled');
+    $status.html('<i class="fa fa-check"></i> Saved')
   }
 
   function autoSave() {
