@@ -4,6 +4,7 @@ import (
 	"github.com/codegangsta/martini"
 	"github.com/codegangsta/martini-contrib/render"
 	"github.com/codegangsta/martini-contrib/sessions"
+	"github.com/codegangsta/martini-contrib/web"
 	"labix.org/v2/mgo"
 	"log"
 	"net/http"
@@ -16,11 +17,11 @@ const SESSION_USER_ID_KEY string = "user-id"
 // Filters
 //
 
-func authorize(w http.ResponseWriter, r *http.Request, db *mgo.Database, c martini.Context, session sessions.Session, l *log.Logger) {
+func authorize(ctx *web.Context, db *mgo.Database, c martini.Context, session sessions.Session, l *log.Logger) {
 	userId := session.Get(SESSION_USER_ID_KEY)
 	if userId == nil || userId == "" {
 		l.Println("Unauthorized access")
-		http.Redirect(w, r, "/auth", http.StatusFound)
+		ctx.Redirect(http.StatusFound, "/auth")
 		return
 	}
 
@@ -28,17 +29,17 @@ func authorize(w http.ResponseWriter, r *http.Request, db *mgo.Database, c marti
 	if err != nil {
 		l.Println("User not found")
 		session.Delete(SESSION_USER_ID_KEY)
-		http.Redirect(w, r, "/auth", http.StatusFound)
+		ctx.Redirect(http.StatusFound, "/auth", )
 		return
 	}
 
 	c.Map(user)
 }
 
-func validateDate(w http.ResponseWriter, r *http.Request, params martini.Params) {
+func validateDate(ctx *web.Context, params martini.Params) {
 	date := params["date"]
 	if !isValidDate(date) {
-		http.Error(w, "Invalid date. e.g. 2014-01-02", http.StatusBadRequest)
+		ctx.Abort(http.StatusBadRequest, "Invalid date. e.g. 2014-01-02")
 		return
 	}
 }

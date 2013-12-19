@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/codegangsta/martini"
+	"github.com/codegangsta/martini-contrib/web"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
@@ -31,12 +32,9 @@ func Test_rootHandler(t *testing.T) {
 
 func Test_validateDate_invalid(t *testing.T) {
 	w := httptest.NewRecorder()
-	r, err := http.NewRequest("", "", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	ctx := &web.Context{ResponseWriter: w}
 	p := martini.Params{"date": "2013-1-1"}
-	validateDate(w, r, p)
+	validateDate(ctx, p)
 
 	badRequest := 400
 	if w.Code != badRequest {
@@ -46,12 +44,9 @@ func Test_validateDate_invalid(t *testing.T) {
 
 func Test_validateDate_valid(t *testing.T) {
 	w := httptest.NewRecorder()
-	r, err := http.NewRequest("", "", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	ctx := &web.Context{ResponseWriter: w}
 	p := martini.Params{"date": "2013-01-01"}
-	validateDate(w, r, p)
+	validateDate(ctx, p)
 
 	badRequest := 200
 	if w.Code != badRequest {

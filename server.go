@@ -4,6 +4,7 @@ import (
 	"github.com/codegangsta/martini"
 	"github.com/codegangsta/martini-contrib/render"
 	"github.com/codegangsta/martini-contrib/sessions"
+	"github.com/codegangsta/martini-contrib/web"
 	"github.com/joho/godotenv"
 	"labix.org/v2/mgo"
 	"log"
@@ -61,7 +62,8 @@ func main() {
 	//
 	// Session
 	//
-	store := sessions.NewCookieStore([]byte(os.Getenv("SESSION_KEY")))
+	sessionKey := os.Getenv("SESSION_KEY")
+	store := sessions.NewCookieStore([]byte(sessionKey))
 	m.Use(sessions.Sessions("default-session", store))
 
 	//
@@ -81,6 +83,11 @@ func main() {
 	appSecret := os.Getenv("FB_APP_SECRET")
 	fb := &FacebookAuth{AppId: appId, AppSecret: appSecret}
 	m.Map(fb)
+
+	//
+	// web.go context
+	//
+	m.Use(web.ContextWithCookieSecret(sessionKey))
 
 	//
 	// Router
