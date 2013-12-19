@@ -15,7 +15,8 @@ func Test_rootHandler(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	rootHandler(w, r)
+	ctx := &web.Context{Request: r, ResponseWriter: w}
+	rootHandler(ctx)
 
 	found := 302
 	if w.Code != found {

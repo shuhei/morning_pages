@@ -48,30 +48,29 @@ func validateDate(ctx *web.Context, params martini.Params) {
 // Handlers
 //
 
-func rootHandler(w http.ResponseWriter, r *http.Request) {
+func rootHandler(ctx *web.Context) {
 	// TODO: Use user's timezone.
 	tokyo, err := time.LoadLocation("Asia/Tokyo")
 	if err != nil {
-		http.Error(w, "Failed to load location", http.StatusInternalServerError)
+		ctx.Abort(http.StatusInternalServerError, "Failed to load location")
 	}
 	timeInTokyo := time.Now().In(tokyo)
 	today := dateStringOfTime(timeInTokyo)
-	http.Redirect(w, r, "/entries/"+today, http.StatusFound)
+	ctx.Redirect(http.StatusFound, "/entries/"+today)
 }
 
-// TODO: Reduce arguments. Can't I redirect without w and req?
-func showEntry(w http.ResponseWriter, r *http.Request, ren render.Render, db *mgo.Database, params martini.Params, user *User) {
+func showEntry(ctx *web.Context, ren render.Render, db *mgo.Database, params martini.Params, user *User) {
 	date := params["date"]
 	entry, err := findEntry(db, user, date)
 	if err != nil {
-		http.Redirect(w, r, "/entries/"+date+"/edit", http.StatusFound)
+		ctx.Redirect(http.StatusFound, "/entries/"+date+"/edit")
 		return
 	}
 
 	now := time.Now()
 	dates, err := findEntryDates(db, user, now)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		ctx.Abort(http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -95,13 +94,13 @@ func editEntry(r render.Render, db *mgo.Database, params martini.Params, user *U
 	r.HTML(200, "edit", data)
 }
 
-func saveEntry(w http.ResponseWriter, r *http.Request, db *mgo.Database, params martini.Params, user *User) {
+func saveEntry(ctx *web.Context, db *mgo.Database, params martini.Params, user *User) {
 	date := params["date"]
-	body := r.FormValue("body")
+	body := ctx.Request.FormValue("body")
 	err := upsertEntry(db, user, date, body)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		ctx.Abort(http.StatusInternalServerError, err.Error())
 		return
 	}
-	http.Redirect(w, r, "/entries/"+date, http.StatusFound)
+	ctx.Redirect(http.StatusFound, "/entries/"+date)
 }

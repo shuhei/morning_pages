@@ -6,6 +6,7 @@ import (
 	"github.com/codegangsta/martini"
 	"github.com/codegangsta/martini-contrib/render"
 	"github.com/codegangsta/martini-contrib/sessions"
+	"github.com/codegangsta/martini-contrib/web"
 	"io/ioutil"
 	"labix.org/v2/mgo"
 	"log"
@@ -46,20 +47,20 @@ func showLogin(r render.Render) {
 	r.HTML(200, "auth", data)
 }
 
-func logout(w http.ResponseWriter, r *http.Request, session sessions.Session) {
+func logout(ctx *web.Context, session sessions.Session) {
 	session.Set(SESSION_USER_ID_KEY, nil)
-	http.Redirect(w, r, "/auth", http.StatusFound)
+	ctx.Redirect(http.StatusFound, "/auth")
 }
 
-func getAccessToken(w http.ResponseWriter, r *http.Request, c martini.Context, fb *FacebookAuth) {
+func getAccessToken(ctx *web.Context, c martini.Context, fb *FacebookAuth) {
 	// TODO: Handle the case user cancelled logging in.
 
 	// Get access token with the code.
-	code := r.URL.Query()["code"][0]
+	code := ctx.Request.URL.Query()["code"][0]
 	res, err := http.Get(accessTokenUrl(fb, code))
 	if err != nil {
 		log.Println("Failed to request access token from Facebook")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		ctx.Abort(http.StatusInternalServerError, err.Error())
 		return
 	}
 	defer res.Body.Close()
@@ -68,7 +69,7 @@ func getAccessToken(w http.ResponseWriter, r *http.Request, c martini.Context, f
 	body := string(bodyBytes)
 	if res.StatusCode != 200 {
 		log.Println("Failed to get access token", body)
-		http.Error(w, "Failed to get access token from Facebook.", http.StatusInternalServerError)
+		ctx.Abort(http.StatusInternalServerError, "Failed to get access token from Facebook.")
 		return
 	}
 
@@ -78,13 +79,13 @@ func getAccessToken(w http.ResponseWriter, r *http.Request, c martini.Context, f
 	c.Map(token)
 }
 
-func getUserInfo(w http.ResponseWriter, token FacebookToken, c martini.Context) {
+func getUserInfo(ctx *web.Context, token FacebookToken, c martini.Context) {
 	// Get user info with the token.
 	myUrl := fmt.Sprintf("https://graph.facebook.com/me?access_token=%s", token)
 	res, err := http.Get(myUrl)
 	if err != nil {
 		log.Println("Failed to request user information from Facebook")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		ctx.Abort(http.StatusInternalServerError, err.Error())
 		return
 	}
 	defer res.Body.Close()
@@ -95,7 +96,7 @@ func getUserInfo(w http.ResponseWriter, token FacebookToken, c martini.Context) 
 	err = json.Unmarshal(body, &myInfo)
 	if err != nil {
 		log.Println("Failed to parse JSON of Facebook user info")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		ctx.Abort(http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -106,14 +107,14 @@ func getUserInfo(w http.ResponseWriter, token FacebookToken, c martini.Context) 
 	c.Map(userInfo)
 }
 
-func findOrCreateUser(w http.ResponseWriter, r *http.Request, fbUser *FacebookUser, db *mgo.Database, session sessions.Session) {
+func findOrCreateUser(ctx *web.Context, fbUser *FacebookUser, db *mgo.Database, session sessions.Session) {
 	user, err := findFacebookUser(db, fbUser)
 	if err != nil {
 		user, err = insertFacebookUser(db, fbUser)
 		if err != nil {
 			log.Println("Failed to create a user")
 			log.Println(err)
-			http.Redirect(w, r, "/auth", http.StatusFound)
+			ctx.Redirect(http.StatusFound, "/auth")
 			return
 		}
 		log.Println("Created a new user", user.Id)
@@ -123,5 +124,5 @@ func findOrCreateUser(w http.ResponseWriter, r *http.Request, fbUser *FacebookUs
 
 	session.Set(SESSION_USER_ID_KEY, user.Id.Hex())
 
-	http.Redirect(w, r, "/", http.StatusFound)
+	ctx.Redirect(http.StatusFound, "/")
 }
