@@ -1,17 +1,4 @@
-<ul class="mp-entry-index">
-  {{$entry := .Entry}}
-  {{range .EntryDates}}
-    {{if eq .Date $entry.Date}}
-      <li><span class="mp-date-active">{{extractDay .Date}}</span></li>
-    {{else if .IsFuture}}
-      <li><span class="mp-date-inactive">{{extractDay .Date}}</span></li>
-    {{else if not .HasEntry}}
-      <li><span class="mp-date-inactive">{{extractDay .Date}}</span></li>
-    {{else}}
-      <li><a href="/entries/{{.Date}}">{{extractDay .Date}}</a></li>
-    {{end}}
-  {{end}}
-</ul>
+{{template "_index" .}}
 
 <h2>{{.Entry.Date}}</h2>
 <p>[<a href="/entries/{{.Entry.Date}}/edit">edit</a>]</p>

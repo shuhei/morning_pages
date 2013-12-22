@@ -1,3 +1,5 @@
+{{template "_index" .}}
+
 <h2>Editing {{.Entry.Date}}</h2>
 <form action="/entries/{{.Entry.Date}}" method="POST" class="form" id="mp-entry-form">
   <div class="form-group" id="mp-entry-body">

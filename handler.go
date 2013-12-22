@@ -44,6 +44,15 @@ func validateDate(ctx *web.Context, params martini.Params) {
 	}
 }
 
+func fetchDateEntries(ctx *web.Context, db *mgo.Database, c martini.Context, user *User) {
+	dates, err := findEntryDates(db, user, time.Now())
+	if err != nil {
+		ctx.Abort(http.StatusInternalServerError, err.Error())
+		return
+	}
+	c.Map(dates)
+}
+
 //
 // Handlers
 //
@@ -59,18 +68,11 @@ func rootHandler(ctx *web.Context) {
 	ctx.Redirect(http.StatusFound, "/entries/"+today)
 }
 
-func showEntry(ctx *web.Context, ren render.Render, db *mgo.Database, params martini.Params, user *User) {
+func showEntry(ctx *web.Context, ren render.Render, db *mgo.Database, params martini.Params, user *User, dates []DateEntry) {
 	date := params["date"]
 	entry, err := findEntry(db, user, date)
 	if err != nil {
 		ctx.Redirect(http.StatusFound, "/entries/"+date+"/edit")
-		return
-	}
-
-	now := time.Now()
-	dates, err := findEntryDates(db, user, now)
-	if err != nil {
-		ctx.Abort(http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -81,7 +83,7 @@ func showEntry(ctx *web.Context, ren render.Render, db *mgo.Database, params mar
 	ren.HTML(200, "view", data)
 }
 
-func editEntry(r render.Render, db *mgo.Database, params martini.Params, user *User) {
+func editEntry(r render.Render, db *mgo.Database, params martini.Params, user *User, dates []DateEntry) {
 	date := params["date"]
 	entry, err := findEntry(db, user, date)
 	if err != nil {
@@ -90,6 +92,7 @@ func editEntry(r render.Render, db *mgo.Database, params martini.Params, user *U
 
 	data := make(map[string]interface{})
 	data["Entry"] = entry
+	data["EntryDates"] = dates
 	data["CurrentUser"] = user
 	r.HTML(200, "edit", data)
 }
