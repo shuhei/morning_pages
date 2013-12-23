@@ -121,3 +121,13 @@ func isValidDate(date string) bool {
 	_, err := time.ParseInLocation("2006-01-02", date, time.Local)
 	return err == nil
 }
+
+func todayString() (string, error) {
+	// TODO: Use user's timezone.
+	tokyo, err := time.LoadLocation("Asia/Tokyo")
+	if err != nil {
+		return "", err
+	}
+	timeInTokyo := time.Now().In(tokyo)
+	return dateStringOfTime(timeInTokyo), nil
+}

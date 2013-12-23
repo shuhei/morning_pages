@@ -29,7 +29,7 @@ func authorize(ctx *web.Context, db *mgo.Database, c martini.Context, session se
 	if err != nil {
 		l.Println("User not found")
 		session.Delete(SESSION_USER_ID_KEY)
-		ctx.Redirect(http.StatusFound, "/auth", )
+		ctx.Redirect(http.StatusFound, "/auth")
 		return
 	}
 
@@ -58,13 +58,11 @@ func fetchDateEntries(ctx *web.Context, db *mgo.Database, c martini.Context, use
 //
 
 func rootHandler(ctx *web.Context) {
-	// TODO: Use user's timezone.
-	tokyo, err := time.LoadLocation("Asia/Tokyo")
+	today, err := todayString()
 	if err != nil {
 		ctx.Abort(http.StatusInternalServerError, "Failed to load location")
+		return
 	}
-	timeInTokyo := time.Now().In(tokyo)
-	today := dateStringOfTime(timeInTokyo)
 	ctx.Redirect(http.StatusFound, "/entries/"+today)
 }
 
@@ -76,15 +74,32 @@ func showEntry(ctx *web.Context, ren render.Render, db *mgo.Database, params mar
 		return
 	}
 
+	today, err := todayString()
+	if err != nil {
+		ctx.Abort(http.StatusInternalServerError, "Failed to load location")
+		return
+	}
+
 	data := make(map[string]interface{})
 	data["Entry"] = entry
 	data["EntryDates"] = dates
 	data["CurrentUser"] = user
+	data["IsEditable"] = today == date
 	ren.HTML(200, "view", data)
 }
 
-func editEntry(r render.Render, db *mgo.Database, params martini.Params, user *User, dates []DateEntry) {
+func editEntry(ctx *web.Context, r render.Render, db *mgo.Database, params martini.Params, user *User, dates []DateEntry) {
 	date := params["date"]
+	today, err := todayString()
+	if err != nil {
+		ctx.Abort(http.StatusInternalServerError, "Failed to load location")
+		return
+	}
+	if date != today {
+		ctx.Abort(http.StatusBadRequest, "Past entries are not editable")
+		return
+	}
+
 	entry, err := findEntry(db, user, date)
 	if err != nil {
 		entry = newEntry(user, date)
