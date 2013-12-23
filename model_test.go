@@ -1,9 +1,26 @@
 package main
 
 import (
+	"labix.org/v2/mgo/bson"
 	"testing"
 	"time"
 )
+
+func Test_newEntry(t *testing.T) {
+	user := &User{Id: bson.NewObjectId(), Uid: "mm", Name: "Mitsuru Murakami"}
+	date := "2013-12-23"
+	entry := newEntry(user, date)
+
+	if entry.Date != date {
+		t.Errorf("Expected %s but got %s", date, entry.Date)
+	}
+	if entry.UserId != user.Id {
+		t.Errorf("Expected %v but got %v", user.Id, entry.UserId)
+	}
+	if entry.Body != "" {
+		t.Errorf("Expected new entry body to be empty but got %s", entry.Body)
+	}
+}
 
 func Test_daysIn_30(t *testing.T) {
 	days := daysIn(4, 2012)
@@ -35,6 +52,13 @@ func Test_daysIn_feb(t *testing.T) {
 	}
 }
 
+func Test_dateString(t *testing.T) {
+	expected := "2012-08-08"
+	if s := dateString(2012, 8, 8); s != expected {
+		t.Errorf("Expected %s but got %s", expected, s)
+	}
+}
+
 func Test_dateStringOfTime_pad(t *testing.T) {
 	d := time.Date(2013, 7, 8, 0, 0, 0, 0, time.Local)
 	expected := "2013-07-08"
@@ -51,19 +75,23 @@ func Test_dateStringOfTime_eod(t *testing.T) {
 	}
 }
 
-func Test_isValidDate(t *testing.T) {
+func Test_isValidDate_zeropad(t *testing.T) {
 	d := "1981-01-02"
 	if !isValidDate(d) {
 		t.Errorf("Expected %s to be valid date", d)
 	}
+}
 
-	dd := "1981-1-2"
-	if isValidDate(dd) {
-		t.Errorf("Expected %s to be invalid date", dd)
+func Test_isValidDate_nopad(t *testing.T) {
+	d := "1981-1-2"
+	if isValidDate(d) {
+		t.Errorf("Expected %s to be invalid date", d)
 	}
+}
 
-	ddd := "hello"
-	if isValidDate(ddd) {
-		t.Errorf("Expected %s to be invalid date", ddd)
+func Test_isValidDate_notdate(t *testing.T) {
+	d := "hello"
+	if isValidDate(d) {
+		t.Errorf("Expected %s to be invalid date", d)
 	}
 }
