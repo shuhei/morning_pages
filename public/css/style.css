@@ -28,6 +28,12 @@
   background: #eee;
 }
 
+/* entry */
+.mp-edit-button {
+  margin-top: -4px;
+  margin-left: 10px;
+}
+
 /* entry form */
 #mp-entry-status {
   padding-left: 12px;

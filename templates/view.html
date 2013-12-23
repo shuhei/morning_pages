@@ -1,12 +1,13 @@
 {{template "_index" .}}
 
-<h2>{{.Entry.Date}}</h2>
-<p>
+<h2>
+  {{.Entry.Date}}
   {{if .IsEditable}}
-    <a href="/entries/{{.Entry.Date}}/edit" class="btn btn-default">Edit</a></p>
+    <a href="/entries/{{.Entry.Date}}/edit" class="btn btn-default btn-xs mp-edit-button">Edit</a>
   {{else}}
-    <button class="btn btn-default" disabled>Not editable</button>
+    <button class="btn btn-default btn-xs mp-edit-button" disabled>Not editable</button>
   {{end}}
-</p>
+</h2>
+
 <div>{{.Entry.Body | linebreak | unsafe}}</div>
 <p class="pull-right"><span class="char-count">{{charCount .Entry.Body}}</span> characters</p>
