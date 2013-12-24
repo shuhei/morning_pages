@@ -27,12 +27,12 @@ func redirectUrl() string {
 	return fmt.Sprintf("%s/auth/callback", host)
 }
 
-func accessTokenUrl(fb *FacebookAuth, code string) string {
+func accessTokenUrl(fb *FacebookAuth, code string, redirect string) string {
 	baseUrl := "https://graph.facebook.com/oauth/access_token?"
 
 	params := url.Values{}
 	params.Add("client_id", fb.AppId)
-	params.Add("redirect_uri", redirectUrl())
+	params.Add("redirect_uri", redirect)
 	params.Add("client_secret", fb.AppSecret)
 	params.Add("code", code)
 
@@ -48,7 +48,7 @@ func showLogin(r render.Render) {
 }
 
 func logout(ctx *web.Context, session sessions.Session) {
-	session.Set(SESSION_USER_ID_KEY, nil)
+	session.Delete(SESSION_USER_ID_KEY)
 	ctx.Redirect(http.StatusFound, "/auth")
 }
 
@@ -57,7 +57,7 @@ func getAccessToken(ctx *web.Context, c martini.Context, fb *FacebookAuth) {
 
 	// Get access token with the code.
 	code := ctx.Request.URL.Query()["code"][0]
-	res, err := http.Get(accessTokenUrl(fb, code))
+	res, err := http.Get(accessTokenUrl(fb, code, redirectUrl()))
 	if err != nil {
 		log.Println("Failed to request access token from Facebook")
 		ctx.Abort(http.StatusInternalServerError, err.Error())
