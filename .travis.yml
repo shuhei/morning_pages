@@ -4,5 +4,7 @@ go:
 install:
   - go get github.com/axw/gocov/gocov
   - go get github.com/mattn/goveralls
+env:
+  secure: "K16DOC1qMh1+CPwfdpXm4Ui06SkFCK8YGVubO7S5jXLch2vYw5rnj9KjofxO7u/0q7R2dC/wGitMkQO+BScjDiWwd7/S5DK7Q5NG9B49jFUdCpR5S772Ulg7vfway+UoeA6ziYAkcPhWlCBLVn4P3zULC0UtwfN6xDXPy8w+u8Q="
 script:
-  secure: "apq5mxkhiZkzRQC4NrXlxSdaMWH+XcQyJhzeJlq74lM6mVI7cf+JeZZ6b+nX44+QQQ6q/tGWKoXL2110ywqAdJi8S7F7ulK1guFsWcj+v7QDtN3L16og6tT9kBi1WstPdHgFzKWeVUqcI5i9ZNZwmJNUEU+AeCrIAcbtEMd7PXY="
+  - goveralls $COVERALLS_KEY
