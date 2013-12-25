@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/codegangsta/martini"
 	"github.com/codegangsta/martini-contrib/render"
 	"github.com/codegangsta/martini-contrib/sessions"
@@ -20,7 +19,10 @@ type FacebookToken string
 type FacebookAuth interface {
 	DialogUrl() string
 	AccessTokenUrl(code string) string
+	MyUrl(token FacebookToken) string
+
 	GetAccessToken(code string) (FacebookToken, error)
+	GetUserInfo(token FacebookToken) (*FacebookUser, error)
 }
 
 type facebookAuth struct {
@@ -55,6 +57,15 @@ func (fb *facebookAuth) AccessTokenUrl(code string) string {
 	return baseUrl + params.Encode()
 }
 
+func (fb *facebookAuth) MyUrl(token FacebookToken) string {
+	baseUrl := "https://graph.facebook.com/me?"
+
+	params := url.Values{}
+	params.Add("access_token", string(token))
+
+	return baseUrl + params.Encode()
+}
+
 func (fb *facebookAuth) GetAccessToken(code string) (FacebookToken, error) {
 	res, err := http.Get(fb.AccessTokenUrl(code))
 	if err != nil {
@@ -73,6 +84,30 @@ func (fb *facebookAuth) GetAccessToken(code string) (FacebookToken, error) {
 	// Find access token in the response body.
 	params, _ := url.ParseQuery(body)
 	return FacebookToken(params["access_token"][0]), nil
+}
+
+func (fb *facebookAuth) GetUserInfo(token FacebookToken) (*FacebookUser, error) {
+	res, err := http.Get(fb.MyUrl(token))
+	if err != nil {
+		log.Println("Failed to request user information from Facebook")
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	body, _ := ioutil.ReadAll(res.Body)
+
+	myInfo := make(map[string]interface{})
+	err = json.Unmarshal(body, &myInfo)
+	if err != nil {
+		log.Println("Failed to parse JSON of Facebook user info")
+		return nil, err
+	}
+
+	userInfo := &FacebookUser{
+		Id:   myInfo["id"].(string),
+		Name: myInfo["name"].(string),
+	}
+	return userInfo, nil
 }
 
 //
@@ -104,31 +139,13 @@ func getAccessToken(ctx *web.Context, c martini.Context, fb FacebookAuth) {
 	c.Map(token)
 }
 
-func getUserInfo(ctx *web.Context, token FacebookToken, c martini.Context) {
-	// Get user info with the token.
-	myUrl := fmt.Sprintf("https://graph.facebook.com/me?access_token=%s", token)
-	res, err := http.Get(myUrl)
+func getUserInfo(ctx *web.Context, c martini.Context, token FacebookToken, fb FacebookAuth) {
+	userInfo, err := fb.GetUserInfo(token)
 	if err != nil {
-		log.Println("Failed to request user information from Facebook")
-		ctx.Abort(http.StatusInternalServerError, err.Error())
-		return
-	}
-	defer res.Body.Close()
-
-	body, _ := ioutil.ReadAll(res.Body)
-
-	myInfo := make(map[string]interface{})
-	err = json.Unmarshal(body, &myInfo)
-	if err != nil {
-		log.Println("Failed to parse JSON of Facebook user info")
 		ctx.Abort(http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	userInfo := &FacebookUser{
-		Id:   myInfo["id"].(string),
-		Name: myInfo["name"].(string),
-	}
 	c.Map(userInfo)
 }
 
