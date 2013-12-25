@@ -1,4 +1,8 @@
 language: go
-
 go:
   - tip
+install:
+  - go get github.com/axw/gocov/gocov
+  - go get github.com/mattn/goveralls
+script:
+  secure: "apq5mxkhiZkzRQC4NrXlxSdaMWH+XcQyJhzeJlq74lM6mVI7cf+JeZZ6b+nX44+QQQ6q/tGWKoXL2110ywqAdJi8S7F7ulK1guFsWcj+v7QDtN3L16og6tT9kBi1WstPdHgFzKWeVUqcI5i9ZNZwmJNUEU+AeCrIAcbtEMd7PXY="
