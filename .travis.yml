@@ -4,8 +4,8 @@ go:
 install:
   - go get -v github.com/axw/gocov/gocov
   - go get -v github.com/mattn/goveralls
-  - ls $GOPATH/bin
+  - ls /home/travis/gopath/bin
 env:
   secure: "K16DOC1qMh1+CPwfdpXm4Ui06SkFCK8YGVubO7S5jXLch2vYw5rnj9KjofxO7u/0q7R2dC/wGitMkQO+BScjDiWwd7/S5DK7Q5NG9B49jFUdCpR5S772Ulg7vfway+UoeA6ziYAkcPhWlCBLVn4P3zULC0UtwfN6xDXPy8w+u8Q="
 script:
-  - $GOPATH/bin/goveralls $COVERALLS_KEY
+  - /home/travis/gopath/bin/goveralls $COVERALLS_KEY
