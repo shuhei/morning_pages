@@ -4,6 +4,14 @@ import (
 	"testing"
 )
 
+func Test_unsafe(t *testing.T) {
+	str := "<p>Hello, World!</p>"
+	html := string(unsafe(str))
+	if html != str {
+		t.Errorf("Expected %s but got %s", str, html)
+	}
+}
+
 func Test_charCount(t *testing.T) {
 	str := "hello\r\n\r\nworld\n!"
 	expected := 14
