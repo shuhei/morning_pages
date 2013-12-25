@@ -12,6 +12,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strings"
 )
 
 type FacebookToken string
@@ -21,8 +22,8 @@ type FacebookAuth interface {
 	AccessTokenUrl(code string) string
 	MyUrl(token FacebookToken) string
 
-	GetAccessToken(code string) (FacebookToken, error)
-	GetUserInfo(token FacebookToken) (*FacebookUser, error)
+	GetAccessToken(tokenUrl string) (FacebookToken, error)
+	GetUserInfo(userUrl string) (*FacebookUser, error)
 }
 
 type facebookAuth struct {
@@ -66,8 +67,8 @@ func (fb *facebookAuth) MyUrl(token FacebookToken) string {
 	return baseUrl + params.Encode()
 }
 
-func (fb *facebookAuth) GetAccessToken(code string) (FacebookToken, error) {
-	res, err := http.Get(fb.AccessTokenUrl(code))
+func (fb *facebookAuth) GetAccessToken(tokenUrl string) (FacebookToken, error) {
+	res, err := http.Get(tokenUrl)
 	if err != nil {
 		log.Println("Failed to request access token from Facebook")
 		return "", err
@@ -82,12 +83,12 @@ func (fb *facebookAuth) GetAccessToken(code string) (FacebookToken, error) {
 	}
 
 	// Find access token in the response body.
-	params, _ := url.ParseQuery(body)
+	params, _ := url.ParseQuery(strings.TrimSpace(body))
 	return FacebookToken(params["access_token"][0]), nil
 }
 
-func (fb *facebookAuth) GetUserInfo(token FacebookToken) (*FacebookUser, error) {
-	res, err := http.Get(fb.MyUrl(token))
+func (fb *facebookAuth) GetUserInfo(userUrl string) (*FacebookUser, error) {
+	res, err := http.Get(userUrl)
 	if err != nil {
 		log.Println("Failed to request user information from Facebook")
 		return nil, err
@@ -111,7 +112,7 @@ func (fb *facebookAuth) GetUserInfo(token FacebookToken) (*FacebookUser, error) 
 }
 
 //
-// Facebook OAuth handlers
+// Handlers
 //
 
 func showLogin(r render.Render, fb FacebookAuth) {
@@ -130,7 +131,8 @@ func getAccessToken(ctx *web.Context, c martini.Context, fb FacebookAuth) {
 
 	// Get access token with the code.
 	code := ctx.Request.URL.Query()["code"][0]
-	token, err := fb.GetAccessToken(code)
+	tokenUrl := fb.AccessTokenUrl(code)
+	token, err := fb.GetAccessToken(tokenUrl)
 	if err != nil {
 		ctx.Abort(http.StatusInternalServerError, err.Error())
 		return
@@ -140,7 +142,8 @@ func getAccessToken(ctx *web.Context, c martini.Context, fb FacebookAuth) {
 }
 
 func getUserInfo(ctx *web.Context, c martini.Context, token FacebookToken, fb FacebookAuth) {
-	userInfo, err := fb.GetUserInfo(token)
+	userUrl := fb.MyUrl(token)
+	userInfo, err := fb.GetUserInfo(userUrl)
 	if err != nil {
 		ctx.Abort(http.StatusInternalServerError, err.Error())
 		return

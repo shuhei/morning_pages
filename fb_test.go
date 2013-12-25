@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/codegangsta/martini-contrib/sessions"
 	"github.com/codegangsta/martini-contrib/web"
 	"net/http"
@@ -62,12 +63,98 @@ func (session *mockSession) Flashes(vars ...string) []interface{} {
 func (session *mockSession) Options(sessions.Options) {
 }
 
+func TestFacebookAuth_DialogUrl(t *testing.T) {
+	fb := NewFacebookAuth("APP_ID", "APP_SECRET", "http://somewhere.org/something")
+	expected := "https://www.facebook.com/dialog/oauth?client_id=APP_ID&redirect_uri=http%3A%2F%2Fsomewhere.org%2Fsomething"
+	if u := fb.DialogUrl(); u != expected {
+		t.Errorf("Expected %s but got %s", expected, u)
+	}
+}
+
 func TestFacebookAuth_AccessTokenUrl(t *testing.T) {
 	fb := NewFacebookAuth("APP_ID", "APP_SECRET", "http://somewhere.org/something")
 	code := "SOME_CODE"
 	expected := "https://graph.facebook.com/oauth/access_token?client_id=APP_ID&client_secret=APP_SECRET&code=SOME_CODE&redirect_uri=http%3A%2F%2Fsomewhere.org%2Fsomething"
 	if u := fb.AccessTokenUrl(code); u != expected {
 		t.Errorf("Expected %s but got %s", expected, u)
+	}
+}
+
+func TestFacebookAuth_MyUrl(t *testing.T) {
+	fb := NewFacebookAuth("APP_ID", "APP_SECRET", "http://somewhere.org/something")
+	token := FacebookToken("SOME_TOKEN")
+	expected := "https://graph.facebook.com/me?access_token=SOME_TOKEN"
+	if u := fb.MyUrl(token); u != expected {
+		t.Errorf("Expected %s but got %s", expected, u)
+	}
+}
+
+func TestFacebookAuth_GetAccessToken_ok(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, "access_token=HELLO")
+	}))
+	defer ts.Close()
+
+	fb := NewFacebookAuth("APP_ID", "APP_SECRET", "http://somewhere.org/something")
+	token, err := fb.GetAccessToken(ts.URL)
+	if err != nil {
+		t.Errorf("Got error %s", err.Error())
+	}
+
+	actual := (string)(token)
+	expected := "HELLO"
+	if actual != expected {
+		t.Errorf("Expected %s but got %s", expected, actual)
+	}
+}
+
+func TestFacebookAuth_GetAccessToken_ng(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(400)
+		fmt.Fprintln(w, "Error!")
+	}))
+	defer ts.Close()
+
+	fb := NewFacebookAuth("APP_ID", "APP_SECRET", "http://somewhere.org/something")
+	_, err := fb.GetAccessToken(ts.URL)
+	if err == nil {
+		t.Error("Expected an error but didn't get one")
+	}
+}
+
+func TestFacebookAuth_GetUserInfo_ok(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, `{"id": "1234567890", "name": "Hello World"}`)
+	}))
+	defer ts.Close()
+
+	fb := NewFacebookAuth("APP_ID", "APP_SECRET", "http://somewhere.org/something")
+	user, err := fb.GetUserInfo(ts.URL)
+	if err != nil {
+		t.Errorf("Got error %s", err.Error())
+	}
+
+	expectedId := "1234567890"
+	expectedName := "Hello World"
+	if user.Id != expectedId {
+		t.Errorf("Expected %s but got %s", expectedId, user.Id)
+	}
+	if user.Name != expectedName {
+		t.Errorf("Expected %s but got %s", expectedName, user.Name)
+	}
+}
+
+func TestFacebookAuth_GetUserInfo_ng(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(400)
+		fmt.Fprintln(w, "Error!")
+	}))
+	defer ts.Close()
+
+	fb := NewFacebookAuth("APP_ID", "APP_SECRET", "http://somewhere.org/something")
+	_, err := fb.GetUserInfo(ts.URL)
+	if err == nil {
+		t.Error("Expected an error but didn't get one")
 	}
 }
 
