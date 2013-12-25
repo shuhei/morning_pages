@@ -5,6 +5,7 @@ A [Morning Pages](http://juliacameronlive.com/basic-tools/morning-pages/) app fo
 *Absolutely work in progress!!!*
 
 [![Build Status](https://travis-ci.org/shuhei/morning_pages.png)](https://travis-ci.org/shuhei/morning_pages)
+[![Coverage Status](https://coveralls.io/repos/shuhei/morning_pages/badge.png)](https://coveralls.io/r/shuhei/morning_pages)
 
 ## Installation
 
