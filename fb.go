@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/codegangsta/martini"
 	"github.com/codegangsta/martini-contrib/render"
@@ -12,38 +13,75 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"os"
 )
-
-type FacebookAuth struct {
-	AppId     string
-	AppSecret string
-}
 
 type FacebookToken string
 
-func redirectUrl() string {
-	host := os.Getenv("FB_REDIRECT_URL")
-	return fmt.Sprintf("%s/auth/callback", host)
+type FacebookAuth interface {
+	DialogUrl() string
+	AccessTokenUrl(code string) string
+	GetAccessToken(code string) (FacebookToken, error)
 }
 
-func accessTokenUrl(fb *FacebookAuth, code string, redirect string) string {
+type facebookAuth struct {
+	AppId       string
+	AppSecret   string
+	RedirectUrl string
+}
+
+func NewFacebookAuth(appId, appSecret, redirectUrl string) FacebookAuth {
+	return &facebookAuth{AppId: appId, AppSecret: appSecret, RedirectUrl: redirectUrl}
+}
+
+func (fb *facebookAuth) DialogUrl() string {
+	baseUrl := "https://www.facebook.com/dialog/oauth?"
+
+	params := url.Values{}
+	params.Add("client_id", fb.AppId)
+	params.Add("redirect_uri", fb.RedirectUrl)
+
+	return baseUrl + params.Encode()
+}
+
+func (fb *facebookAuth) AccessTokenUrl(code string) string {
 	baseUrl := "https://graph.facebook.com/oauth/access_token?"
 
 	params := url.Values{}
 	params.Add("client_id", fb.AppId)
-	params.Add("redirect_uri", redirect)
+	params.Add("redirect_uri", fb.RedirectUrl)
 	params.Add("client_secret", fb.AppSecret)
 	params.Add("code", code)
 
 	return baseUrl + params.Encode()
 }
 
-func showLogin(r render.Render) {
-	appId := os.Getenv("FB_APP_ID")
-	dialogUrl := fmt.Sprintf("https://www.facebook.com/dialog/oauth?client_id=%s&redirect_uri=%s", appId, redirectUrl())
+func (fb *facebookAuth) GetAccessToken(code string) (FacebookToken, error) {
+	res, err := http.Get(fb.AccessTokenUrl(code))
+	if err != nil {
+		log.Println("Failed to request access token from Facebook")
+		return "", err
+	}
+	defer res.Body.Close()
+
+	bodyBytes, _ := ioutil.ReadAll(res.Body)
+	body := string(bodyBytes)
+	if res.StatusCode != 200 {
+		log.Println("Failed to get access token", body)
+		return "", errors.New("Failed to get access token from Facebook.")
+	}
+
+	// Find access token in the response body.
+	params, _ := url.ParseQuery(body)
+	return FacebookToken(params["access_token"][0]), nil
+}
+
+//
+// Facebook OAuth handlers
+//
+
+func showLogin(r render.Render, fb FacebookAuth) {
 	data := make(map[string]interface{})
-	data["FacebookUrl"] = dialogUrl
+	data["FacebookUrl"] = fb.DialogUrl()
 	r.HTML(200, "auth", data)
 }
 
@@ -52,30 +90,17 @@ func logout(ctx *web.Context, session sessions.Session) {
 	ctx.Redirect(http.StatusFound, "/auth")
 }
 
-func getAccessToken(ctx *web.Context, c martini.Context, fb *FacebookAuth) {
+func getAccessToken(ctx *web.Context, c martini.Context, fb FacebookAuth) {
 	// TODO: Handle the case user cancelled logging in.
 
 	// Get access token with the code.
 	code := ctx.Request.URL.Query()["code"][0]
-	res, err := http.Get(accessTokenUrl(fb, code, redirectUrl()))
+	token, err := fb.GetAccessToken(code)
 	if err != nil {
-		log.Println("Failed to request access token from Facebook")
 		ctx.Abort(http.StatusInternalServerError, err.Error())
 		return
 	}
-	defer res.Body.Close()
 
-	bodyBytes, _ := ioutil.ReadAll(res.Body)
-	body := string(bodyBytes)
-	if res.StatusCode != 200 {
-		log.Println("Failed to get access token", body)
-		ctx.Abort(http.StatusInternalServerError, "Failed to get access token from Facebook.")
-		return
-	}
-
-	// Find access token in the response body.
-	params, _ := url.ParseQuery(body)
-	token := FacebookToken(params["access_token"][0])
 	c.Map(token)
 }
 

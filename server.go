@@ -81,8 +81,9 @@ func main() {
 	//
 	appId := os.Getenv("FB_APP_ID")
 	appSecret := os.Getenv("FB_APP_SECRET")
-	fb := &FacebookAuth{AppId: appId, AppSecret: appSecret}
-	m.Map(fb)
+	redirectUrl := os.Getenv("FB_REDIRECT_URL")
+	fb := NewFacebookAuth(appId, appSecret, redirectUrl)
+	m.MapTo(fb, (*FacebookAuth)(nil))
 
 	//
 	// web.go context

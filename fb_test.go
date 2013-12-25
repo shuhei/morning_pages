@@ -62,22 +62,22 @@ func (session *mockSession) Flashes(vars ...string) []interface{} {
 func (session *mockSession) Options(sessions.Options) {
 }
 
-func Test_accessTokenUrl(t *testing.T) {
-	fb := &FacebookAuth{AppId: "APP_ID", AppSecret: "APP_SECRET"}
+func TestFacebookAuth_AccessTokenUrl(t *testing.T) {
+	fb := NewFacebookAuth("APP_ID", "APP_SECRET", "http://somewhere.org/something")
 	code := "SOME_CODE"
-	redirect := "http://somewhere.org/something"
 	expected := "https://graph.facebook.com/oauth/access_token?client_id=APP_ID&client_secret=APP_SECRET&code=SOME_CODE&redirect_uri=http%3A%2F%2Fsomewhere.org%2Fsomething"
-	if u := accessTokenUrl(fb, code, redirect); u != expected {
+	if u := fb.AccessTokenUrl(code); u != expected {
 		t.Errorf("Expected %s but got %s", expected, u)
 	}
 }
 
 func Test_showLogin(t *testing.T) {
 	render := &mockRender{}
+	fb := NewFacebookAuth("APP_ID", "APP_SECRET", "http://somewhere.org/something")
 	expectedStatus := 200
 	expectedName := "auth"
-	expectedFbUrl := "https://www.facebook.com/dialog/oauth?client_id=&redirect_uri=/auth/callback"
-	showLogin(render)
+	expectedFbUrl := "https://www.facebook.com/dialog/oauth?client_id=APP_ID&redirect_uri=http%3A%2F%2Fsomewhere.org%2Fsomething"
+	showLogin(render, fb)
 	if status := render.status; status != expectedStatus {
 		t.Errorf("Expected to set status %d but got %d", expectedStatus, status)
 	}
