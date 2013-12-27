@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/codegangsta/martini-contrib/render"
 	"github.com/codegangsta/martini-contrib/sessions"
 	"github.com/codegangsta/martini-contrib/web"
 	"net/http"
@@ -13,9 +14,10 @@ import (
 // Mock render
 //
 type mockRender struct {
-	status int
-	name   string
-	v      interface{}
+	status   int
+	name     string
+	location string
+	v        interface{}
 }
 
 func (render *mockRender) JSON(status int, v interface{}) {
@@ -23,7 +25,7 @@ func (render *mockRender) JSON(status int, v interface{}) {
 	render.v = v
 }
 
-func (render *mockRender) HTML(status int, name string, v interface{}) {
+func (render *mockRender) HTML(status int, name string, v interface{}, htmlOpt ...render.HTMLOptions) {
 	render.status = status
 	render.name = name
 	render.v = v
@@ -31,6 +33,15 @@ func (render *mockRender) HTML(status int, name string, v interface{}) {
 
 func (render *mockRender) Error(status int) {
 	render.status = status
+}
+
+func (render *mockRender) Redirect(location string, status ...int) {
+	if len(status) > 0 {
+		render.status = status[0]
+	} else {
+		render.status = 302
+	}
+	render.location = location
 }
 
 //

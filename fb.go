@@ -88,7 +88,6 @@ func (fb *facebookAuth) GetAccessToken(tokenUrl string) (FacebookToken, error) {
 func (fb *facebookAuth) GetUserInfo(userUrl string) (*FacebookUser, error) {
 	res, err := http.Get(userUrl)
 	if err != nil {
-		log.Println("Failed to request user information from Facebook")
 		return nil, err
 	}
 	defer res.Body.Close()
@@ -98,7 +97,6 @@ func (fb *facebookAuth) GetUserInfo(userUrl string) (*FacebookUser, error) {
 	myInfo := make(map[string]interface{})
 	err = json.Unmarshal(body, &myInfo)
 	if err != nil {
-		log.Println("Failed to parse JSON of Facebook user info")
 		return nil, err
 	}
 
