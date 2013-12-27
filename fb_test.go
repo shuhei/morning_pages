@@ -37,7 +37,8 @@ func (render *mockRender) Error(status int) {
 // Mock session
 //
 type mockSession struct {
-	v map[interface{}]interface{}
+	v       map[interface{}]interface{}
+	flashes map[interface{}][]interface{}
 }
 
 func (session *mockSession) Get(key interface{}) interface{} {
@@ -53,11 +54,17 @@ func (session *mockSession) Delete(key interface{}) {
 }
 
 func (session *mockSession) AddFlash(value interface{}, vars ...string) {
+	key := vars[0]
+	session.flashes[key] = append(session.flashes[key], value)
 }
 
 func (session *mockSession) Flashes(vars ...string) []interface{} {
-	var flashes []interface{}
-	return flashes
+	key := vars[0]
+	values, ok := session.flashes[key]
+	if !ok || len(values) == 0 {
+		return nil
+	}
+	return values
 }
 
 func (session *mockSession) Options(sessions.Options) {
@@ -108,6 +115,14 @@ func TestFacebookAuth_GetAccessToken_ok(t *testing.T) {
 	}
 }
 
+func TestFacebookAuth_GetAccessToken_err(t *testing.T) {
+	fb := NewFacebookAuth("APP_ID", "APP_SECRET", "http://somewhere.org/something")
+	_, err := fb.GetAccessToken("NOWHERE")
+	if err == nil {
+		t.Error("Expected an error but didn't get one")
+	}
+}
+
 func TestFacebookAuth_GetAccessToken_ng(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(400)
@@ -141,6 +156,14 @@ func TestFacebookAuth_GetUserInfo_ok(t *testing.T) {
 	}
 	if user.Name != expectedName {
 		t.Errorf("Expected %s but got %s", expectedName, user.Name)
+	}
+}
+
+func TestFacebookAuth_GetUserInfo_err(t *testing.T) {
+	fb := NewFacebookAuth("APP_ID", "APP_SECRET", "http://somewhere.org/something")
+	_, err := fb.GetUserInfo("NOWHERE")
+	if err == nil {
+		t.Error("Expected an error but didn't get one")
 	}
 }
 

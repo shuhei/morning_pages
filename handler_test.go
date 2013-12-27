@@ -9,6 +9,27 @@ import (
 	"testing"
 )
 
+func Test_getError(t *testing.T) {
+	flashes := make(map[interface{}][]interface{})
+	flashes[FlashErrorKey] = []interface{}{"Hello!", "World!"}
+	session := &mockSession{flashes: flashes}
+	expected := "Hello!"
+	if e := getError(session); e != expected {
+		t.Errorf("Expected %s but got %s", expected, e)
+	}
+}
+
+func Test_setError(t *testing.T) {
+	flashes := make(map[interface{}][]interface{})
+	session := &mockSession{flashes: flashes}
+	setError("Hello!", session)
+	e := flashes[FlashErrorKey][0]
+	expected := "Hello!"
+	if e != expected {
+		t.Errorf("Expected %s but got %s", expected, e)
+	}
+}
+
 func Test_rootHandler(t *testing.T) {
 	w := httptest.NewRecorder()
 	r, err := http.NewRequest("", "", nil)
