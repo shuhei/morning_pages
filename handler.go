@@ -11,14 +11,15 @@ import (
 	"time"
 )
 
-const SESSION_USER_ID_KEY string = "user-id"
+const SessionUserIdKey string = "user-id"
+const FlashErrorKey string = "error"
 
 //
 // Filters
 //
 
 func authorize(ctx *web.Context, db *mgo.Database, c martini.Context, session sessions.Session, l *log.Logger) {
-	userId := session.Get(SESSION_USER_ID_KEY)
+	userId := session.Get(SessionUserIdKey)
 	if userId == nil || userId == "" {
 		l.Println("Unauthorized access")
 		ctx.Redirect(http.StatusFound, "/auth")
@@ -28,7 +29,7 @@ func authorize(ctx *web.Context, db *mgo.Database, c martini.Context, session se
 	user, err := findUserById(db, userId.(string))
 	if err != nil {
 		l.Println("User not found")
-		session.Delete(SESSION_USER_ID_KEY)
+		session.Delete(SessionUserIdKey)
 		ctx.Redirect(http.StatusFound, "/auth")
 		return
 	}
@@ -54,6 +55,22 @@ func fetchDateEntries(ctx *web.Context, db *mgo.Database, c martini.Context, use
 }
 
 //
+// Flash
+//
+
+func getError(session sessions.Session) string {
+	if flashes := session.Flashes(FlashErrorKey); flashes != nil {
+		return flashes[0].(string)
+	} else {
+		return ""
+	}
+}
+
+func setError(message string, session sessions.Session) {
+	session.AddFlash(message, FlashErrorKey)
+}
+
+//
 // Handlers
 //
 
@@ -66,7 +83,7 @@ func rootHandler(ctx *web.Context) {
 	ctx.Redirect(http.StatusFound, "/entries/"+today)
 }
 
-func showEntry(ctx *web.Context, ren render.Render, db *mgo.Database, params martini.Params, user *User, dates []DateEntry) {
+func showEntry(ctx *web.Context, ren render.Render, db *mgo.Database, params martini.Params, session sessions.Session, user *User, dates []DateEntry) {
 	date := params["date"]
 	entry, err := findEntry(db, user, date)
 	if err != nil {
@@ -85,10 +102,11 @@ func showEntry(ctx *web.Context, ren render.Render, db *mgo.Database, params mar
 	data["EntryDates"] = dates
 	data["CurrentUser"] = user
 	data["IsEditable"] = today == date
+	data["Error"] = getError(session)
 	ren.HTML(200, "view", data)
 }
 
-func editEntry(ctx *web.Context, r render.Render, db *mgo.Database, params martini.Params, user *User, dates []DateEntry) {
+func editEntry(ctx *web.Context, r render.Render, db *mgo.Database, params martini.Params, session sessions.Session, user *User, dates []DateEntry) {
 	date := params["date"]
 	today, err := todayString()
 	if err != nil {
@@ -96,7 +114,8 @@ func editEntry(ctx *web.Context, r render.Render, db *mgo.Database, params marti
 		return
 	}
 	if date != today {
-		ctx.Abort(http.StatusBadRequest, "Past entries are not editable")
+		setError("Past entries are not editable", session)
+		ctx.Redirect(http.StatusFound, "/entries/"+date)
 		return
 	}
 
@@ -109,6 +128,7 @@ func editEntry(ctx *web.Context, r render.Render, db *mgo.Database, params marti
 	data["Entry"] = entry
 	data["EntryDates"] = dates
 	data["CurrentUser"] = user
+	data["Error"] = getError(session)
 	r.HTML(200, "edit", data)
 }
 

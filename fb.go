@@ -70,7 +70,6 @@ func (fb *facebookAuth) MyUrl(token FacebookToken) string {
 func (fb *facebookAuth) GetAccessToken(tokenUrl string) (FacebookToken, error) {
 	res, err := http.Get(tokenUrl)
 	if err != nil {
-		log.Println("Failed to request access token from Facebook")
 		return "", err
 	}
 	defer res.Body.Close()
@@ -78,7 +77,6 @@ func (fb *facebookAuth) GetAccessToken(tokenUrl string) (FacebookToken, error) {
 	bodyBytes, _ := ioutil.ReadAll(res.Body)
 	body := string(bodyBytes)
 	if res.StatusCode != 200 {
-		log.Println("Failed to get access token", body)
 		return "", errors.New("Failed to get access token from Facebook.")
 	}
 
@@ -115,14 +113,15 @@ func (fb *facebookAuth) GetUserInfo(userUrl string) (*FacebookUser, error) {
 // Handlers
 //
 
-func showLogin(r render.Render, fb FacebookAuth) {
+func showLogin(r render.Render, session sessions.Session, fb FacebookAuth) {
 	data := make(map[string]interface{})
 	data["FacebookUrl"] = fb.DialogUrl()
+	data["Error"] = getError(session)
 	r.HTML(200, "auth", data)
 }
 
 func logout(ctx *web.Context, session sessions.Session) {
-	session.Delete(SESSION_USER_ID_KEY)
+	session.Delete(SessionUserIdKey)
 	ctx.Redirect(http.StatusFound, "/auth")
 }
 
@@ -167,7 +166,7 @@ func findOrCreateUser(ctx *web.Context, fbUser *FacebookUser, db *mgo.Database, 
 		log.Println("Found a user", user.Id)
 	}
 
-	session.Set(SESSION_USER_ID_KEY, user.Id.Hex())
+	session.Set(SessionUserIdKey, user.Id.Hex())
 
 	ctx.Redirect(http.StatusFound, "/")
 }

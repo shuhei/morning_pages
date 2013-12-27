@@ -160,11 +160,12 @@ func TestFacebookAuth_GetUserInfo_ng(t *testing.T) {
 
 func Test_showLogin(t *testing.T) {
 	render := &mockRender{}
+	session := &mockSession{}
 	fb := NewFacebookAuth("APP_ID", "APP_SECRET", "http://somewhere.org/something")
 	expectedStatus := 200
 	expectedName := "auth"
 	expectedFbUrl := "https://www.facebook.com/dialog/oauth?client_id=APP_ID&redirect_uri=http%3A%2F%2Fsomewhere.org%2Fsomething"
-	showLogin(render, fb)
+	showLogin(render, session, fb)
 	if status := render.status; status != expectedStatus {
 		t.Errorf("Expected to set status %d but got %d", expectedStatus, status)
 	}
@@ -184,11 +185,11 @@ func Test_logout(t *testing.T) {
 	}
 	ctx := &web.Context{Request: r, ResponseWriter: w}
 	v := make(map[interface{}]interface{})
-	v[SESSION_USER_ID_KEY] = "SOME_USER_KEY"
+	v[SessionUserIdKey] = "SOME_USER_KEY"
 	session := &mockSession{v: v}
 	logout(ctx, session)
 
-	if _, ok := v[SESSION_USER_ID_KEY]; ok {
+	if _, ok := v[SessionUserIdKey]; ok {
 		t.Error("Expected to delete session user ID key but didn't")
 	}
 

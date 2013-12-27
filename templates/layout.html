@@ -36,6 +36,10 @@
     <div class="container">
       <div class="row">
         <div class="col-md-12">
+          {{if .Error}}
+            <div class="alert alert-danger">{{.Error}}</div>
+          {{end}}
+
           {{ yield }}
         </div>
       </div>
