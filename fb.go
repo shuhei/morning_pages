@@ -127,7 +127,12 @@ func getAccessToken(ctx *web.Context, c martini.Context, fb FacebookAuth) {
 	// TODO: Handle the case user cancelled logging in.
 
 	// Get access token with the code.
-	code := ctx.Request.URL.Query()["code"][0]
+	codes, ok := ctx.Request.URL.Query()["code"]
+	if !ok {
+		ctx.Abort(http.StatusInternalServerError, "No code is given")
+		return
+	}
+	code := codes[0]
 	tokenUrl := fb.AccessTokenUrl(code)
 	token, err := fb.GetAccessToken(tokenUrl)
 	if err != nil {
