@@ -52,7 +52,7 @@ jQuery(function ($) {
   }
 
   function wait() {
-    setTimeout(autoSave, 5000);
+    setTimeout(autoSave, 15 * 1000);
   }
 
   becomeClean();
