@@ -3,11 +3,11 @@
 <h2>
   {{.Entry.Date}}
   {{if .IsEditable}}
-    <a href="/entries/{{.Entry.Date}}/edit" class="btn btn-default btn-xs mp-edit-button">Edit</a>
+    <a href="/entries/{{.Entry.Date}}/edit" class="btn btn-default btn-xs mp-edit-button">編集</a>
   {{else}}
-    <button class="btn btn-default btn-xs mp-edit-button" disabled>Not editable</button>
+    <button class="btn btn-default btn-xs mp-edit-button" disabled>編集できません</button>
   {{end}}
 </h2>
 
 <div>{{.Entry.Body | linebreak | unsafe}}</div>
-<p class="pull-right"><span class="char-count">{{charCount .Entry.Body}}</span> characters</p>
+<p class="pull-right"><span class="char-count">{{charCount .Entry.Body}}</span> 文字</p>

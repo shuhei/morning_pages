@@ -24,9 +24,9 @@
         </div>
         {{if .CurrentUser}}
           <div class="collapse navbar-collapse" id="mp-navbar-collapse">
-            <p class="navbar-text">Hi, {{.CurrentUser.Name}}!</p>
+            <p class="navbar-text">{{.CurrentUser.Name}} さん</p>
             <ul class="nav navbar-nav navbar-right">
-              <li><a href="/auth/logout">Log out</a></li>
+              <li><a href="/auth/logout">ログアウト</a></li>
             </ul>
           </div>
         {{end}}
@@ -48,7 +48,7 @@
     <footer>
       <div class="container">
         <div class="mp-footer">
-          <p>2,000 characters * 365 days = 730,000 characters!</p>
+          <p>2,000 文字 * 365 日 = 730,000 文字！</p>
         </div>
       </div>
     </footer>

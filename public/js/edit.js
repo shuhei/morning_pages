@@ -17,13 +17,13 @@ jQuery(function ($) {
   function becomeDirty() {
     if (isDirty) return;
     isDirty = true;
-    $status.html('<i class="fa fa-pencil"></i> Unsaved')
+    $status.html('<i class="fa fa-pencil"></i> 未保存')
   }
 
   function becomeClean() {
     if (!isDirty) return;
     isDirty = false;
-    $status.html('<i class="fa fa-check"></i> Saved')
+    $status.html('<i class="fa fa-check"></i> 保存済')
   }
 
   function autoSave() {

@@ -1,15 +1,15 @@
 {{template "_index" .}}
 
-<h2>Editing {{.Entry.Date}}</h2>
+<h2>{{.Entry.Date}}</h2>
 <form action="/entries/{{.Entry.Date}}" method="POST" class="form" id="mp-entry-form">
   <div class="form-group" id="mp-entry-body">
     <textarea name="body" rows="20" cols="80" class="form-control">{{.Entry.Body}}</textarea>
   </div>
   <div class="form-group">
-    <input type="submit" value="Done" class="btn btn-default">
+    <input type="submit" value="完了" class="btn btn-default">
     <span id="mp-entry-status"></span>
     <p class="pull-right">
-      <span id="mp-char-count">{{charCount .Entry.Body}}</span> characters
+      <span id="mp-char-count">{{charCount .Entry.Body}}</span> 文字
     </p>
   </div>
 </form>
