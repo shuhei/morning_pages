@@ -2,16 +2,18 @@ package main
 
 import (
 	"fmt"
+	"github.com/codegangsta/inject"
 	"github.com/codegangsta/martini-contrib/render"
 	"github.com/codegangsta/martini-contrib/sessions"
 	"github.com/codegangsta/martini-contrib/web"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 )
 
 //
-// Mock render
+// Mock render.Render
 //
 type mockRender struct {
 	status   int
@@ -45,7 +47,7 @@ func (render *mockRender) Redirect(location string, status ...int) {
 }
 
 //
-// Mock session
+// Mock sessions.Session
 //
 type mockSession struct {
 	v       map[interface{}]interface{}
@@ -79,6 +81,46 @@ func (session *mockSession) Flashes(vars ...string) []interface{} {
 }
 
 func (session *mockSession) Options(sessions.Options) {
+}
+
+//
+// Mock martini.Context
+//
+type mockContext struct {
+	inject.Injector
+}
+
+func (ctx *mockContext) Next() {
+}
+
+func (ctx *mockContext) Written() bool {
+	return false
+}
+
+//
+// Mock FacebookAuth
+//
+type mockFacebookAuth struct {
+	token FacebookToken
+	user  *FacebookUser
+	code  string
+}
+
+func (fb *mockFacebookAuth) DialogUrl() string {
+	return "DIALOG_URL"
+}
+func (fb *mockFacebookAuth) AccessTokenUrl(code string) string {
+	fb.code = code
+	return "ACCESS_TOKEN_URL"
+}
+func (fb *mockFacebookAuth) MyUrl(token FacebookToken) string {
+	return "MY_URL"
+}
+func (fb *mockFacebookAuth) GetAccessToken(tokenUrl string) (FacebookToken, error) {
+	return fb.token, nil
+}
+func (fb *mockFacebookAuth) GetUserInfo(userUrl string) (*FacebookUser, error) {
+	return fb.user, nil
 }
 
 func TestFacebookAuth_DialogUrl(t *testing.T) {
@@ -229,11 +271,35 @@ func Test_logout(t *testing.T) {
 
 	expectedCode := 302
 	if w.Code != expectedCode {
-		t.Errorf("Expected %d but got %d", w.Code, expectedCode)
+		t.Errorf("Expected %d but got %d", expectedCode, w.Code)
 	}
 
 	expectedLocation := "/auth"
 	if loc := w.HeaderMap["Location"][0]; loc != expectedLocation {
 		t.Errorf("Expected %s but got %s", expectedLocation, loc)
+	}
+}
+
+func Test_getAccessToken(t *testing.T) {
+	w := httptest.NewRecorder()
+	r, err := http.NewRequest("GET", "/somewhere?code=12345", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ctx := &web.Context{Request: r, ResponseWriter: w}
+	c := &mockContext{inject.New()}
+	fb := &mockFacebookAuth{token: FacebookToken("FB_TOKEN")}
+	getAccessToken(ctx, c, fb)
+
+	expectedCode := "12345"
+	if fb.code != expectedCode {
+		t.Errorf("Expected %s but got %s", expectedCode, fb.code)
+	}
+
+	expectedToken := FacebookToken("FB_TOKEN")
+	token := c.Get(reflect.TypeOf(FacebookToken(""))).Interface().(FacebookToken)
+	if token != expectedToken {
+		t.Errorf("Expected %s but got %s", expectedToken, token)
 	}
 }
