@@ -62,8 +62,8 @@ func findEntry(db *mgo.Database, user *User, date string) (*Entry, error) {
 	return &entry, err
 }
 
-func findEntryDates(db *mgo.Database, user *User, t time.Time) ([]DateEntry, error) {
-	year, month, day := t.Year(), t.Month(), t.Day()
+func findEntryDates(db *mgo.Database, user *User, t time.Time, now time.Time) ([]DateEntry, error) {
+	year, month, _ := t.Year(), t.Month(), t.Day()
 	days := daysIn(month, year)
 	start, end := dateString(year, month, 1), dateString(year, month, days)
 
@@ -78,6 +78,7 @@ func findEntryDates(db *mgo.Database, user *User, t time.Time) ([]DateEntry, err
 		return nil, err
 	}
 
+	nowString := dateStringOfTime(now)
 	dates := make([]DateEntry, days)
 	for i := 0; i < days; i++ {
 		date := dateString(year, month, i+1)
@@ -88,7 +89,7 @@ func findEntryDates(db *mgo.Database, user *User, t time.Time) ([]DateEntry, err
 				break
 			}
 		}
-		dates[i] = DateEntry{Date: date, HasEntry: hasEntry, IsFuture: day < i+1}
+		dates[i] = DateEntry{Date: date, HasEntry: hasEntry, IsFuture: nowString < date}
 	}
 	return dates, nil
 }
@@ -118,16 +119,33 @@ func dateStringOfTime(t time.Time) string {
 }
 
 func isValidDate(date string) bool {
-	_, err := time.ParseInLocation("2006-01-02", date, time.Local)
+	_, err := parseDate(date)
 	return err == nil
 }
 
-func todayString() (string, error) {
+func parseDate(date string) (time.Time, error) {
 	// TODO: Use user's timezone.
-	tokyo, err := time.LoadLocation("Asia/Tokyo")
+	tokyo := time.FixedZone("JST", 9*60*60)
+	t, err := time.ParseInLocation("2006-01-02", date, tokyo)
 	if err != nil {
-		return "", err
+		return time.Now(), err
 	}
+	return t, nil
+}
+
+func todayString() string {
+	// TODO: Use user's timezone.
+	tokyo := time.FixedZone("JST", 9*60*60)
 	timeInTokyo := time.Now().In(tokyo)
-	return dateStringOfTime(timeInTokyo), nil
+	return dateStringOfTime(timeInTokyo)
+}
+
+func beginningOfPreviousMonth(t time.Time) time.Time {
+	y, m, _ := t.Date()
+	return time.Date(y, m-1, 1, 0, 0, 0, 0, t.Location())
+}
+
+func beginningOfNextMonth(t time.Time) time.Time {
+	y, m, _ := t.Date()
+	return time.Date(y, m+1, 1, 0, 0, 0, 0, t.Location())
 }

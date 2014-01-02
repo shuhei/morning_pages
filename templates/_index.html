@@ -1,14 +1,21 @@
 <ul class="mp-entry-index">
+  {{if .PreviousMonth}}
+    <li><a href="/entries/{{.PreviousMonth}}">&lt;</a></li>
+  {{end}}
   {{$entry := .Entry}}
+  {{$today := .Today}}
   {{range .EntryDates}}
-    {{if eq .Date $entry.Date}}
-      <li><span class="mp-date-active">{{extractDay .Date}}</span></li>
+    {{if and (not .HasEntry) (ne .Date $today)}}
+      <li><span class="mp-date-inactive">{{extractDay .Date}}</span></li>
     {{else if .IsFuture}}
       <li><span class="mp-date-inactive">{{extractDay .Date}}</span></li>
-    {{else if not .HasEntry}}
-      <li><span class="mp-date-inactive">{{extractDay .Date}}</span></li>
+    {{else if eq .Date $entry.Date}}
+      <li><span class="mp-date-active">{{extractDay .Date}}</span></li>
     {{else}}
       <li><a href="/entries/{{.Date}}">{{extractDay .Date}}</a></li>
     {{end}}
+  {{end}}
+  {{if .NextMonth}}
+    <li><a href="/entries/{{.NextMonth}}">&gt;</a></li>
   {{end}}
 </ul>

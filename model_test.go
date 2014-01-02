@@ -95,3 +95,31 @@ func Test_isValidDate_notdate(t *testing.T) {
 		t.Errorf("Expected %s to be invalid date", d)
 	}
 }
+
+func Test_beginningOfPreviousMonth(t *testing.T) {
+	d := time.Date(2013, 7, 8, 23, 59, 59, 999, time.Local)
+	expected := time.Date(2013, 6, 1, 0, 0, 0, 0, time.Local)
+	if prev := beginningOfPreviousMonth(d); prev != expected {
+		t.Errorf("Expected %v but got %v", expected, prev)
+	}
+}
+
+func Test_beginningOfNextMonth(t *testing.T) {
+	d := time.Date(2013, 7, 8, 23, 59, 59, 999, time.Local)
+	expected := time.Date(2013, 8, 1, 0, 0, 0, 0, time.Local)
+	if next := beginningOfNextMonth(d); next != expected {
+		t.Errorf("Expected %v but got %v", expected, next)
+	}
+}
+
+func Test_parseDate(t *testing.T) {
+	tokyo := time.FixedZone("JST", 9*60*60)
+	expected := time.Date(2014, 4, 1, 0, 0, 0, 0, tokyo)
+	d, err := parseDate("2014-04-01")
+	if err != nil {
+		t.Errorf("Didn't expect error but got %v", err)
+	}
+	if d.UnixNano() != expected.UnixNano() {
+		t.Errorf("Expected %v but got %v", expected, d)
+	}
+}

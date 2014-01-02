@@ -60,13 +60,28 @@ func validateDate(ctx *web.Context, params martini.Params) {
 	}
 }
 
-func fetchDateEntries(ctx *web.Context, db *mgo.Database, data TemplateData, user *User) {
-	dates, err := findEntryDates(db, user, time.Now())
+func fetchDateEntries(ctx *web.Context, db *mgo.Database, params martini.Params, data TemplateData, user *User) {
+	now := time.Now()
+	date, err := parseDate(params["date"])
+	if err != nil {
+		ctx.Abort(http.StatusInternalServerError, err.Error())
+		return
+	}
+	dates, err := findEntryDates(db, user, date, now)
 	if err != nil {
 		ctx.Abort(http.StatusInternalServerError, err.Error())
 		return
 	}
 	data["EntryDates"] = dates
+	data["Today"] = dateStringOfTime(now)
+
+	prev := beginningOfPreviousMonth(date)
+	data["PreviousMonth"] = dateStringOfTime(prev)
+
+	next := beginningOfNextMonth(date)
+	if next.UnixNano() <= now.UnixNano() {
+		data["NextMonth"] = dateStringOfTime(next)
+	}
 }
 
 //
@@ -90,26 +105,21 @@ func setError(message string, session sessions.Session) {
 //
 
 func rootHandler(ctx *web.Context) {
-	today, err := todayString()
-	if err != nil {
-		ctx.Abort(http.StatusInternalServerError, "Failed to load location")
-		return
-	}
+	today := todayString()
 	ctx.Redirect(http.StatusFound, "/entries/"+today)
 }
 
 func showEntry(ctx *web.Context, ren render.Render, db *mgo.Database, params martini.Params, session sessions.Session, data TemplateData, user *User) {
 	date := params["date"]
+	today := todayString()
 	entry, err := findEntry(db, user, date)
 	if err != nil {
-		ctx.Redirect(http.StatusFound, "/entries/"+date+"/edit")
-		return
-	}
-
-	today, err := todayString()
-	if err != nil {
-		ctx.Abort(http.StatusInternalServerError, "Failed to load location")
-		return
+		if date == today {
+			ctx.Redirect(http.StatusFound, "/entries/"+date+"/edit")
+			return
+		} else {
+			entry = newEntry(user, date)
+		}
 	}
 
 	data["Entry"] = entry
@@ -121,11 +131,7 @@ func showEntry(ctx *web.Context, ren render.Render, db *mgo.Database, params mar
 
 func editEntry(ctx *web.Context, r render.Render, db *mgo.Database, params martini.Params, session sessions.Session, data TemplateData, user *User) {
 	date := params["date"]
-	today, err := todayString()
-	if err != nil {
-		ctx.Abort(http.StatusInternalServerError, "Failed to load location")
-		return
-	}
+	today := todayString()
 	if date != today {
 		setError("Past entries are not editable", session)
 		ctx.Redirect(http.StatusFound, "/entries/"+date)
