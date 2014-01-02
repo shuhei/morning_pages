@@ -14,6 +14,21 @@ import (
 const SessionUserIdKey string = "user-id"
 const FlashErrorKey string = "error"
 
+type TemplateData map[string]interface{}
+
+func NewTemplateData() TemplateData {
+	return make(TemplateData)
+}
+
+//
+// Middleware
+//
+
+func initTemplateData(c martini.Context) {
+	data := NewTemplateData()
+	c.Map(data)
+}
+
 //
 // Filters
 //
@@ -45,13 +60,13 @@ func validateDate(ctx *web.Context, params martini.Params) {
 	}
 }
 
-func fetchDateEntries(ctx *web.Context, db *mgo.Database, c martini.Context, user *User) {
+func fetchDateEntries(ctx *web.Context, db *mgo.Database, data TemplateData, user *User) {
 	dates, err := findEntryDates(db, user, time.Now())
 	if err != nil {
 		ctx.Abort(http.StatusInternalServerError, err.Error())
 		return
 	}
-	c.Map(dates)
+	data["EntryDates"] = dates
 }
 
 //
@@ -83,7 +98,7 @@ func rootHandler(ctx *web.Context) {
 	ctx.Redirect(http.StatusFound, "/entries/"+today)
 }
 
-func showEntry(ctx *web.Context, ren render.Render, db *mgo.Database, params martini.Params, session sessions.Session, user *User, dates []DateEntry) {
+func showEntry(ctx *web.Context, ren render.Render, db *mgo.Database, params martini.Params, session sessions.Session, data TemplateData, user *User) {
 	date := params["date"]
 	entry, err := findEntry(db, user, date)
 	if err != nil {
@@ -97,16 +112,14 @@ func showEntry(ctx *web.Context, ren render.Render, db *mgo.Database, params mar
 		return
 	}
 
-	data := make(map[string]interface{})
 	data["Entry"] = entry
-	data["EntryDates"] = dates
 	data["CurrentUser"] = user
 	data["IsEditable"] = today == date
 	data["Error"] = getError(session)
 	ren.HTML(200, "view", data)
 }
 
-func editEntry(ctx *web.Context, r render.Render, db *mgo.Database, params martini.Params, session sessions.Session, user *User, dates []DateEntry) {
+func editEntry(ctx *web.Context, r render.Render, db *mgo.Database, params martini.Params, session sessions.Session, data TemplateData, user *User) {
 	date := params["date"]
 	today, err := todayString()
 	if err != nil {
@@ -124,9 +137,7 @@ func editEntry(ctx *web.Context, r render.Render, db *mgo.Database, params marti
 		entry = newEntry(user, date)
 	}
 
-	data := make(map[string]interface{})
 	data["Entry"] = entry
-	data["EntryDates"] = dates
 	data["CurrentUser"] = user
 	data["Error"] = getError(session)
 	r.HTML(200, "edit", data)

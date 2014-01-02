@@ -91,6 +91,11 @@ func main() {
 	m.Use(web.ContextWithCookieSecret(sessionKey))
 
 	//
+	// TemplateData
+	//
+	m.Use(initTemplateData)
+
+	//
 	// Router
 	//
 	prepareRouter(m)
