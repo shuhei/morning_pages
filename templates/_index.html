@@ -1,6 +1,6 @@
 <ul class="mp-entry-index">
   {{if .PreviousMonth}}
-    <li><a href="/entries/{{.PreviousMonth}}">&lt;</a></li>
+    <li><a href="/entries/{{.PreviousMonth}}"><i class="fa fa-arrow-left"></i></a></li>
   {{end}}
   {{$entry := .Entry}}
   {{$today := .Today}}
@@ -16,6 +16,6 @@
     {{end}}
   {{end}}
   {{if .NextMonth}}
-    <li><a href="/entries/{{.NextMonth}}">&gt;</a></li>
+    <li><a href="/entries/{{.NextMonth}}"><i class="fa fa-arrow-right"></i></a></li>
   {{end}}
 </ul>
