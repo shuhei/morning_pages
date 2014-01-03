@@ -5,8 +5,10 @@ install:
   - go get -v code.google.com/p/go.tools/cmd/cover
   - go get -v github.com/axw/gocov/gocov
   - go get -v github.com/mattn/goveralls
-  - go get -v ./...
+  - go get -v github.com/kr/godep
+  - export PATH=$HOME/gopath/bin:$PATH
+  - export GOPATH=`godep path`:$GOPATH
 env:
   secure: "K16DOC1qMh1+CPwfdpXm4Ui06SkFCK8YGVubO7S5jXLch2vYw5rnj9KjofxO7u/0q7R2dC/wGitMkQO+BScjDiWwd7/S5DK7Q5NG9B49jFUdCpR5S772Ulg7vfway+UoeA6ziYAkcPhWlCBLVn4P3zULC0UtwfN6xDXPy8w+u8Q="
 script:
-  - /home/travis/gopath/bin/goveralls $COVERALLS_KEY
+  - goveralls $COVERALLS_KEY
