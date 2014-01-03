@@ -1,0 +1,51 @@
+{
+	"ImportPath": "github.com/shuhei/morning_pages",
+	"GoVersion": "go1.2",
+	"Deps": [
+		{
+			"ImportPath": "github.com/codegangsta/inject",
+			"Rev": "346a984957aa24276ebc5e7b16b3ac6a50fe8138"
+		},
+		{
+			"ImportPath": "github.com/codegangsta/martini",
+			"Comment": "v0.1-48-g033bcc3",
+			"Rev": "033bcc3c48ebacea4c1d9cca152ec5a64df6b02e"
+		},
+		{
+			"ImportPath": "github.com/codegangsta/martini-contrib/render",
+			"Comment": "v0.1-79-ga760c9e",
+			"Rev": "a760c9e93911e9ba629561c47ba3feff4c969257"
+		},
+		{
+			"ImportPath": "github.com/codegangsta/martini-contrib/sessions",
+			"Comment": "v0.1-79-ga760c9e",
+			"Rev": "a760c9e93911e9ba629561c47ba3feff4c969257"
+		},
+		{
+			"ImportPath": "github.com/codegangsta/martini-contrib/web",
+			"Comment": "v0.1-79-ga760c9e",
+			"Rev": "a760c9e93911e9ba629561c47ba3feff4c969257"
+		},
+		{
+			"ImportPath": "github.com/gorilla/context",
+			"Rev": "a08edd30ad9e104612741163dc087a613829a23c"
+		},
+		{
+			"ImportPath": "github.com/gorilla/securecookie",
+			"Rev": "972f32923fd3555b7f0ea39acdc4e3d4d5412ee8"
+		},
+		{
+			"ImportPath": "github.com/gorilla/sessions",
+			"Rev": "c9bf01c18818f7738e6b2670f1fd92f710ecb734"
+		},
+		{
+			"ImportPath": "github.com/joho/godotenv",
+			"Rev": "3505098f907089729105e928aebea45f0a643f20"
+		},
+		{
+			"ImportPath": "labix.org/v2/mgo",
+			"Comment": "253",
+			"Rev": "gustavo@niemeyer.net-20131210224142-gtc8ap0sa0roxesc"
+		}
+	]
+}
