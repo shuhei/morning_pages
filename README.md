@@ -11,7 +11,7 @@ A [Morning Pages](http://juliacameronlive.com/basic-tools/morning-pages/) app wr
 2. Make sure that `$GOPATH/bin` is in your `$PATH`.
 3. Install godep. `go get github.com/kr/godep`
 4. Pull this repository.
-5. Set environmental variables.
+5. Set environmental variables. In development, use `.env`.
 6. `godep go install` and `foreman start`
 
 ## Environmental Variables
