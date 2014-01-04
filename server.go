@@ -93,9 +93,9 @@ func main() {
 	m.Use(web.ContextWithCookieSecret(sessionKey))
 
 	//
-	// TemplateData
+	// Mime
 	//
-	m.Use(initTemplateData)
+	m.Use(mime)
 
 	//
 	// Router

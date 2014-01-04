@@ -38,9 +38,9 @@ jQuery(function ($) {
 
   var dateString = window.location.pathname.split('/')[2];
   $.ajax({
-    method: 'GET',
+    type: 'GET',
     url: '/dates/' + dateString,
-    type: 'json'
+    dataType: 'json'
   }).done(function (data) {
     React.renderComponent(
       <EntryIndex prev={data.PreviousMonth}

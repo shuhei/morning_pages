@@ -8,25 +8,52 @@ import (
 	"labix.org/v2/mgo"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 )
 
 const SessionUserIdKey string = "user-id"
 const FlashErrorKey string = "error"
 
-type TemplateData map[string]interface{}
-
-func NewTemplateData() TemplateData {
-	return make(TemplateData)
-}
-
 //
 // Middleware
 //
 
-func initTemplateData(c martini.Context) {
-	data := NewTemplateData()
-	c.Map(data)
+type Mime struct {
+	accept    string
+	param     string
+	extension string
+}
+
+func (m *Mime) HTML() bool {
+	return m.accepts("html")
+}
+
+func (m *Mime) XML() bool {
+	return m.accepts("xml")
+}
+
+func (m *Mime) JSON() bool {
+	return m.accepts("json")
+}
+
+func (m *Mime) accepts(name string) bool {
+	return m.extension == name || m.param == name || strings.Contains(m.accept, name)
+}
+
+func mime(ctx *web.Context, c martini.Context) {
+	accept := ctx.Request.Header.Get("Accept")
+	param := ctx.Params["format"]
+
+	path := ctx.Request.URL.Path
+	components := strings.Split(path, ".")
+	extension := ""
+	if size := len(components); size > 0 {
+		extension = components[size-1]
+	}
+
+	mime := &Mime{accept, param, extension}
+	c.Map(mime)
 }
 
 //
@@ -84,7 +111,7 @@ func showDates(ctx *web.Context, ren render.Render, db *mgo.Database, params mar
 	if next.UnixNano() <= now.UnixNano() {
 		data["NextMonth"] = dateStringOfTime(next)
 	}
-	ren.JSON(200, data)	
+	ren.JSON(200, data)
 }
 
 //
@@ -112,12 +139,12 @@ func rootHandler(ctx *web.Context) {
 	ctx.Redirect(http.StatusFound, "/entries/"+today)
 }
 
-func showEntry(ctx *web.Context, ren render.Render, db *mgo.Database, params martini.Params, session sessions.Session, data TemplateData, user *User) {
+func showEntry(ctx *web.Context, ren render.Render, db *mgo.Database, params martini.Params, mime *Mime, session sessions.Session, user *User) {
 	date := params["date"]
 	today := todayString()
 	entry, err := findEntry(db, user, date)
 	if err != nil {
-		if date == today {
+		if date == today && mime.HTML() {
 			ctx.Redirect(http.StatusFound, "/entries/"+date+"/edit")
 			return
 		} else {
@@ -125,14 +152,20 @@ func showEntry(ctx *web.Context, ren render.Render, db *mgo.Database, params mar
 		}
 	}
 
-	data["Entry"] = entry
-	data["CurrentUser"] = user
-	data["IsEditable"] = today == date
-	data["Error"] = getError(session)
-	ren.HTML(200, "view", data)
+	if mime.JSON() {
+		ren.JSON(200, entry)
+	} else {
+		data := map[string]interface{}{
+			"Entry":       entry,
+			"CurrentUser": user,
+			"IsEditable":  today == date,
+			"Error":       getError(session),
+		}
+		ren.HTML(200, "view", data)
+	}
 }
 
-func editEntry(ctx *web.Context, r render.Render, db *mgo.Database, params martini.Params, session sessions.Session, data TemplateData, user *User) {
+func editEntry(ctx *web.Context, r render.Render, db *mgo.Database, params martini.Params, session sessions.Session, user *User) {
 	date := params["date"]
 	today := todayString()
 	if date != today {
@@ -146,9 +179,11 @@ func editEntry(ctx *web.Context, r render.Render, db *mgo.Database, params marti
 		entry = newEntry(user, date)
 	}
 
-	data["Entry"] = entry
-	data["CurrentUser"] = user
-	data["Error"] = getError(session)
+	data := map[string]interface{}{
+		"Entry":       entry,
+		"CurrentUser": user,
+		"Error":       getError(session),
+	}
 	r.HTML(200, "edit", data)
 }
 

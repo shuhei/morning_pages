@@ -1,60 +1,88 @@
+/** @jsx React.DOM */
+
 jQuery(function ($) {
-  var isDirty = false;
-  var $entryForm = $('#mp-entry-form');
-  var $entryBody = $('#mp-entry-body').on('keyup', function () {
-    becomeDirty();
-    updateCount();
-  });
-  var $textarea = $entryBody.find('textarea');
-  var $charCount = $('#mp-char-count');
-  var $status = $('#mp-entry-status');
+  var container = document.getElementById('mp-edit-container');
+  if (!container) return;
 
-  function updateCount() {
-    var count = $textarea.val().length;
-    $charCount.text(count);
-  }
+  var Edit = React.createClass({
+    getInitialState: function () {
+      return {
+        body: this.props.entry.Body,
+        dirty: undefined
+      };
+    },
+    componentDidMount: function () {
+      this.wait();
+    },
+    autoSave: function () {
+      if (!this.state.dirty) {
+        console.log('nothing to post');
+        this.wait();
+        return;
+      }
 
-  function becomeDirty() {
-    if (isDirty) return;
-    isDirty = true;
-    $status.html('<i class="fa fa-pencil"></i> 未保存')
-  }
+      this.setState({ dirty: false });
 
-  function becomeClean() {
-    if (!isDirty) return;
-    isDirty = false;
-    $status.html('<i class="fa fa-check"></i> 保存済')
-  }
-
-  function autoSave() {
-    if (!isDirty) {
-      console.log('nothing to post');
-      wait();
-      return;
+      $.ajax({
+        type: 'POST',
+        url: "/entries/" + this.props.entry.Date,
+        data: { body: this.state.body }
+      }).done(function () {
+        console.log('success');
+      }.bind(this)).fail(function () {
+        console.log('failure');
+        this.setState({ dirty: true });
+      }.bind(this)).always(function () {
+        if (this.isMounted()) this.wait();
+      }.bind(this));
+    },
+    wait: function () {
+      setTimeout(this.autoSave.bind(this), 15 * 1000);
+    },
+    onKeyUp: function (e) {
+      this.setState({ body: e.target.value, dirty: true })
+    },
+    render: function () {
+      var status;
+      if (this.state.dirty === undefined) {
+        status = '';
+      } else if (this.state.dirty) {
+        status = <span><i className="fa fa-pencil" /> 未保存</span>;
+      } else {
+        status = <span><i className="fa fa-check" /> 保存済</span>;
+      }
+      return (
+        <div>
+          <h2>{this.props.entry.Date}</h2>
+          <form action={"/entries/" + this.props.entry.Date} method="POST" className="form" id="mp-entry-form">
+            <div className="form-group" id="mp-entry-body">
+              <textarea name="body" rows="20" cols="80" className="form-control" onKeyUp={this.onKeyUp}>{this.state.body}</textarea>
+            </div>
+            <div className="form-group">
+              <input type="submit" value="完了" className="btn btn-default" />
+              <span id="mp-entry-status">{status}</span>
+              <p className="pull-right">
+                <span id="mp-char-count">{this.state.body.length}</span> 文字
+              </p>
+            </div>
+          </form>
+        </div>
+      );
     }
+  });
 
-    var options = {
-      type: 'POST',
-      url: $entryForm.attr('action'),
-      data: { body: $textarea.val() }
-    };
+  var dateString = window.location.pathname.split('/')[2];
+  $.ajax({
+    type: 'GET',
+    url: '/entries/' + dateString,
+    dataType: 'json'
+  }).done(function (data) {
+    React.renderComponent(
+      <Edit entry={data} />,
+      container
+    );
+  }).fail(function () {
+    console.log('Failed to show entry index.');
+  });
 
-    becomeClean();
-
-    $.ajax(options).done(function () {
-      console.log('success');
-    }).fail(function () {
-      console.log('failure');
-      becomeDirty();
-    }).always(function () {
-      wait();
-    });
-  }
-
-  function wait() {
-    setTimeout(autoSave, 15 * 1000);
-  }
-
-  becomeClean();
-  wait();
 });

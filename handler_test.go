@@ -1,28 +1,13 @@
 package main
 
 import (
-	"github.com/codegangsta/inject"
 	"github.com/codegangsta/martini"
 	"github.com/codegangsta/martini-contrib/web"
 	"net/http"
 	"net/http/httptest"
-	"reflect"
 	"regexp"
 	"testing"
 )
-
-func Test_initTemplateData(t *testing.T) {
-	c := &mockContext{inject.New()}
-	initTemplateData(c)
-	var data TemplateData
-	data = c.Get(reflect.TypeOf(NewTemplateData())).Interface().(TemplateData)
-	if data == nil {
-		t.Error("Expected TemplateData but got nil")
-	}
-	if l := len(data); l != 0 {
-		t.Errorf("Expected empty data but got %d items", l)
-	}
-}
 
 func Test_getError(t *testing.T) {
 	flashes := make(map[interface{}][]interface{})
