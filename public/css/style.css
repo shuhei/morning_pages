@@ -5,6 +5,7 @@
 .mp-entry-index li {
   display: inline;
   font-size: 12px;
+  padding-right: 4px;
 }
 .mp-entry-index li a,
 .mp-entry-index li span {

@@ -60,7 +60,7 @@ func validateDate(ctx *web.Context, params martini.Params) {
 	}
 }
 
-func fetchDateEntries(ctx *web.Context, db *mgo.Database, params martini.Params, data TemplateData, user *User) {
+func showDates(ctx *web.Context, ren render.Render, db *mgo.Database, params martini.Params, user *User) {
 	now := time.Now()
 	date, err := parseDate(params["date"])
 	if err != nil {
@@ -72,6 +72,8 @@ func fetchDateEntries(ctx *web.Context, db *mgo.Database, params martini.Params,
 		ctx.Abort(http.StatusInternalServerError, err.Error())
 		return
 	}
+
+	data := make(map[string]interface{})
 	data["EntryDates"] = dates
 	data["Today"] = dateStringOfTime(now)
 
@@ -82,6 +84,7 @@ func fetchDateEntries(ctx *web.Context, db *mgo.Database, params martini.Params,
 	if next.UnixNano() <= now.UnixNano() {
 		data["NextMonth"] = dateStringOfTime(next)
 	}
+	ren.JSON(200, data)	
 }
 
 //
