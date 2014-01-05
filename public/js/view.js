@@ -202,22 +202,43 @@ jQuery(function ($) {
 
   var EntryApp = React.createClass({
     getInitialState: function () {
-      return { editing: false };
+      return {
+        editing: false,
+        date: this.props.initialDate,
+        entry: undefined
+      };
     },
     componentDidMount: function () {
-      this.router = new Router({
-        '/': this.setState.bind(this, { editing: false }),
-        '/edit': this.setState.bind(this, { editing: true })
-      });
-      this.router.init();
+      this.fetchEntry(this.state.date);
     },
-    componentWillUnmount: function () {
-      this.router.destroy();
-      delete this.router;
+    componentWillUpdate: function (nextProps, nextState) {
+      if (this.state.date !== nextState.date) {
+        console.log('date changed from', this.state.date, 'to', nextState.date);
+        this.fetchEntry(nextState.date);
+      }
+    },
+    fetchEntry: function (date) {
+      // TODO: Avoid fetching multiple entries at the same time.
+      var entry = new Entry({ Date: date });
+      entry.fetch().done(function () {
+        this.setState({ entry: entry });
+      }.bind(this)).fail(function () {
+        console.log('Failed to get entry.');
+      }.bind(this));
+    },
+    show: function () {
+      this.setState({ editing: false });
+    },
+    edit: function () {
+      this.setState({ editing: true });
     },
     render: function () {
+      if (!this.state.entry) {
+        return <div><EntryIndex date={this.state.date} /></div>;
+      }
+
       var today = dateToString(new Date());
-      var isEditable = today === this.props.entry.get('Date');
+      var isEditable = today === this.state.entry.get('Date');
       var button;
       if (this.state.editing) {
         button = '';
@@ -226,14 +247,13 @@ jQuery(function ($) {
       } else {
         button = <button className="btn btn-default btn-xs mp-edit-button" disabled>編集できません</button>;
       }
-
       return (
         <div>
-          <EntryIndex date={this.props.entry.get('Date')} />
-          <h2>{this.props.entry.get('Date')} {button}</h2>
+          <EntryIndex date={this.state.date} />
+          <h2>{this.state.entry.get('Date')} {button}</h2>
           {this.state.editing ? 
-            <Edit entry={this.props.entry} /> :
-            <View entry={this.props.entry} />
+            <Edit entry={this.state.entry} /> :
+            <View entry={this.state.entry} />
           }
         </div>
       );
@@ -241,13 +261,14 @@ jQuery(function ($) {
   });
 
   var dateString = window.location.pathname.split('/')[2];
-  var entry = new Entry({ Date: dateString });
-  entry.fetch().done(function () {
-    React.renderComponent(
-      <EntryApp entry={entry} />,
-      container
-    );
-  }).fail(function () {
-    console.log('Failed to get entry.');
+  var app = React.renderComponent(
+    <EntryApp initialDate={dateString} />,
+    container
+  );
+
+  var router = new Router({
+    '/': app.show.bind(app),
+    '/edit': app.edit.bind(app)
   });
+  router.init();
 });
