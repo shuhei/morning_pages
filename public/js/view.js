@@ -20,6 +20,61 @@ jQuery(function ($) {
     return [date.getFullYear(), date.getMonth() + 1, date.getDate()].map(pad).join('-');
   }
 
+  function extractDay(dateString) {
+    return dateString.split('-')[2].replace(/^0/, '');
+  }
+
+  var EntryIndex = React.createClass({
+    getInitialState: function () {
+      return {
+        prev: null,
+        next: null,
+        today: dateToString(new Date()),
+        dates: []
+      };
+    },
+    componentDidMount: function () {
+      $.ajax({
+        type: 'GET',
+        url: '/dates/' + this.props.date,
+        dataType: 'json'
+      }).done(function (data) {
+        this.setState({
+          prev: data.PreviousMonth,
+          next: data.NextMonth,
+          dates: data.EntryDates
+        });
+      }.bind(this)).fail(function () {
+        console.log('Failed to get entry index.');
+      }.bind(this));
+    },
+    render: function () {
+      var items = this.state.dates.map(function (date) {
+        var day = extractDay(date.Date);
+        if (!date.HasEntry && date.Date !== this.state.today) {
+          return <li><span className="mp-date-inactive">{day}</span></li>;
+        } else if (date.IsFuture) {
+          return <li><span className="mp-date-inactive">{day}</span></li>;
+        } else if (date.Date === this.props.date) {
+          return <li><span className="mp-date-active">{day}</span></li>;
+        } else {
+          return <li><a href={"/entries/" + date.Date}>{day}</a></li>;
+        }
+      }, this);
+      if (this.state.prev) {
+        items.unshift(
+          <li><a href={"/entries/" + this.state.prev}><i className="fa fa-arrow-left"></i></a></li>
+        );
+      }
+      if (this.state.next) {
+        items.push(
+          <li><a href={"/entries/" + this.state.next}><i className="fa fa-arrow-right"></i></a></li>
+        );
+      }
+      return <ul className="mp-entry-index">{items}</ul>;
+    }
+  });
+
   var Entry = Backbone.Model.extend({
     idAttribute: 'Date',
     urlRoot: '/entries',
@@ -185,6 +240,7 @@ jQuery(function ($) {
 
       return (
         <div>
+          <EntryIndex date={this.props.entry.get('Date')} />
           <h2>{this.props.entry.get('Date')} {button}</h2>
           {this.state.editing ? 
             <Edit entry={this.props.entry} ref="edit" /> :

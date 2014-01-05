@@ -15,7 +15,6 @@ import (
 )
 
 const SessionUserIdKey string = "user-id"
-const FlashErrorKey string = "error"
 
 //
 // Middleware
