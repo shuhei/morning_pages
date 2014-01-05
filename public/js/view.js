@@ -141,37 +141,28 @@ jQuery(function ($) {
     componentDidMount: function () {
       this.wait();
     },
-    autoSave: function () {
+    // auto: boolean to indicate whether it's auto save or not.
+    save: function (auto) {
       if (!this.state.dirty) {
-        console.log('nothing to autosave');
-        this.wait();
+        console.log('nothing to save');
+        auto && this.wait();
         return;
       }
 
       this.setState({ dirty: false });
 
-      this.props.entry.save().done(function () {
-        console.log('autosave success');
-      }.bind(this)).fail(function () {
-        console.log('autosave failure', arguments[0].responseText);
-        this.setState({ dirty: true });
-      }.bind(this)).always(function () {
-        if (this.isMounted()) this.wait();
-      }.bind(this));
-    },
-    save: function () {
-      // TODO: Block editing.
+      // TODO: Block editing if not auto save.
       this.props.entry.save().done(function () {
         console.log('save success');
-        this.setState({ dirty: false });
-        window.location = '#/';
       }.bind(this)).fail(function () {
         console.log('save failure', arguments[0].responseText);
         this.setState({ dirty: true });
+      }.bind(this)).always(function () {
+        if (auto && this.isMounted()) this.wait();
       }.bind(this));
     },
     wait: function () {
-      setTimeout(this.autoSave.bind(this), 15 * 1000);
+      setTimeout(this.save.bind(this, true), 15 * 1000);
     },
     onKeyUp: function (e) {
       this.props.entry.set('Body', e.target.value);
@@ -194,7 +185,7 @@ jQuery(function ($) {
             </textarea>
           </div>
           <div className="form-group">
-            <button className="btn btn-default" onClick={this.save}>完了</button>
+            <button className="btn btn-default" onClick={this.save.bind(this, false)}>完了</button>
             <span id="mp-entry-status">{status}</span>
             <p className="pull-right">
               <span id="mp-char-count">{this.props.entry.count()}</span> 文字
@@ -211,20 +202,14 @@ jQuery(function ($) {
     },
     componentDidMount: function () {
       this.router = new Router({
-        '/': this.view.bind(this),
-        '/edit': this.edit.bind(this)
+        '/': this.setState.bind(this, { editing: false }),
+        '/edit': this.setState.bind(this, { editing: true })
       });
       this.router.init();
     },
     componentWillUnmount: function () {
       this.router.destroy();
       delete this.router;
-    },
-    view: function () {
-      this.setState({ editing: false });
-    },
-    edit: function () {
-      this.setState({ editing: true });
     },
     render: function () {
       var today = dateToString(new Date());
@@ -243,8 +228,8 @@ jQuery(function ($) {
           <EntryIndex date={this.props.entry.get('Date')} />
           <h2>{this.props.entry.get('Date')} {button}</h2>
           {this.state.editing ? 
-            <Edit entry={this.props.entry} ref="edit" /> :
-            <View entry={this.props.entry} ref="view" />
+            <Edit entry={this.props.entry} /> :
+            <View entry={this.props.entry} />
           }
         </div>
       );
