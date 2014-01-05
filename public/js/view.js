@@ -5,7 +5,7 @@ jQuery(function ($) {
   if (!container) return;
 
   function lineBreak(str) {
-    return { __html: str.replace(/\r?\n/g, '<br />') };
+    return str.replace(/\r?\n/g, '<br />');
   }
 
   function pad(num) {
@@ -122,7 +122,7 @@ jQuery(function ($) {
     render: function () {
       return (
         <div>
-          <div dangerouslySetInnerHTML={lineBreak(this.props.entry.get('Body'))} />
+          <div dangerouslySetInnerHTML={ { __html: lineBreak(this.props.entry.get('Body')) } } />
           <p className="pull-right"><span className="char-count">{this.props.entry.count()}</span> 文字</p>
         </div>
       );
@@ -145,7 +145,11 @@ jQuery(function ($) {
     save: function (auto) {
       if (!this.state.dirty) {
         console.log('nothing to save');
-        auto && this.wait();
+        if (auto) {
+          this.wait();
+        } else {
+          window.location = '#/';
+        }
         return;
       }
 
@@ -154,6 +158,7 @@ jQuery(function ($) {
       // TODO: Block editing if not auto save.
       this.props.entry.save().done(function () {
         console.log('save success');
+        if (!auto)  window.location = '#/';
       }.bind(this)).fail(function () {
         console.log('save failure', arguments[0].responseText);
         this.setState({ dirty: true });
