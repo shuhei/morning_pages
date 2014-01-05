@@ -1,14 +1,5 @@
 <div id="mp-entry-index-container"></div>
 <script src="/js/entry-index.js" type="text/jsx"></script>
 
-<h2>
-  {{.Entry.Date}}
-  {{if .IsEditable}}
-    <a href="/entries/{{.Entry.Date}}/edit" class="btn btn-default btn-xs mp-edit-button">編集</a>
-  {{else}}
-    <button class="btn btn-default btn-xs mp-edit-button" disabled>編集できません</button>
-  {{end}}
-</h2>
-
-<div>{{.Entry.Body | linebreak | unsafe}}</div>
-<p class="pull-right"><span class="char-count">{{charCount .Entry.Body}}</span> 文字</p>
+<div id="mp-view-container"></div>
+<script src="/js/view.js" type="text/jsx"></script>

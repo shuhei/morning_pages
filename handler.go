@@ -152,20 +152,18 @@ func showEntry(ctx *web.Context, ren render.Render, db *mgo.Database, params mar
 		}
 	}
 
-	if mime.JSON() {
-		ren.JSON(200, entry)
-	} else {
+	if mime.HTML() {
 		data := map[string]interface{}{
-			"Entry":       entry,
 			"CurrentUser": user,
-			"IsEditable":  today == date,
 			"Error":       getError(session),
 		}
 		ren.HTML(200, "view", data)
+	} else {
+		ren.JSON(200, entry)
 	}
 }
 
-func editEntry(ctx *web.Context, r render.Render, db *mgo.Database, params martini.Params, session sessions.Session, user *User) {
+func editEntry(ctx *web.Context, r render.Render, params martini.Params, session sessions.Session, user *User) {
 	date := params["date"]
 	today := todayString()
 	if date != today {
@@ -174,15 +172,8 @@ func editEntry(ctx *web.Context, r render.Render, db *mgo.Database, params marti
 		return
 	}
 
-	entry, err := findEntry(db, user, date)
-	if err != nil {
-		entry = newEntry(user, date)
-	}
-
 	data := map[string]interface{}{
-		"Entry":       entry,
 		"CurrentUser": user,
-		"Error":       getError(session),
 	}
 	r.HTML(200, "edit", data)
 }

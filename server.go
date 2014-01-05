@@ -74,7 +74,6 @@ func main() {
 	m.Use(render.Renderer(render.Options{
 		Directory:  "templates",
 		Extensions: []string{".html"},
-		Funcs:      templateFuncs(),
 		Layout:     "layout",
 	}))
 

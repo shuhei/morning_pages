@@ -82,7 +82,7 @@ jQuery(function ($) {
       container
     );
   }).fail(function () {
-    console.log('Failed to show entry index.');
+    console.log('Failed to get entry.');
   });
 
 });
