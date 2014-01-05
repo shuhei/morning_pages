@@ -115,22 +115,6 @@ func showDates(ctx *web.Context, ren render.Render, db *mgo.Database, params mar
 }
 
 //
-// Flash
-//
-
-func getError(session sessions.Session) string {
-	if flashes := session.Flashes(FlashErrorKey); flashes != nil {
-		return flashes[0].(string)
-	} else {
-		return ""
-	}
-}
-
-func setError(message string, session sessions.Session) {
-	session.AddFlash(message, FlashErrorKey)
-}
-
-//
 // Handlers
 //
 
@@ -139,7 +123,7 @@ func rootHandler(ctx *web.Context) {
 	ctx.Redirect(http.StatusFound, "/entries/"+today)
 }
 
-func showEntry(ctx *web.Context, ren render.Render, db *mgo.Database, params martini.Params, mime *Mime, session sessions.Session, user *User) {
+func showEntry(ctx *web.Context, ren render.Render, db *mgo.Database, params martini.Params, mime *Mime, user *User) {
 	date := params["date"]
 	today := todayString()
 	entry, err := findEntry(db, user, date)
@@ -155,7 +139,6 @@ func showEntry(ctx *web.Context, ren render.Render, db *mgo.Database, params mar
 	if mime.HTML() {
 		data := map[string]interface{}{
 			"CurrentUser": user,
-			"Error":       getError(session),
 		}
 		ren.HTML(200, "view", data)
 	} else {
@@ -163,23 +146,13 @@ func showEntry(ctx *web.Context, ren render.Render, db *mgo.Database, params mar
 	}
 }
 
-func editEntry(ctx *web.Context, r render.Render, params martini.Params, session sessions.Session, user *User) {
+func saveEntry(ctx *web.Context, db *mgo.Database, params martini.Params, user *User) {
 	date := params["date"]
-	today := todayString()
-	if date != today {
-		setError("Past entries are not editable", session)
-		ctx.Redirect(http.StatusFound, "/entries/"+date)
+	if date != todayString() {
+		ctx.Abort(http.StatusBadRequest, "Past entries are not editable")
 		return
 	}
 
-	data := map[string]interface{}{
-		"CurrentUser": user,
-	}
-	r.HTML(200, "edit", data)
-}
-
-func saveEntry(ctx *web.Context, db *mgo.Database, params martini.Params, user *User) {
-	date := params["date"]
 	body := ctx.Request.FormValue("body")
 	err := upsertEntry(db, user, date, body)
 	if err != nil {

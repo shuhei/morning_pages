@@ -111,10 +111,9 @@ func (fb *facebookAuth) GetUserInfo(userUrl string) (*FacebookUser, error) {
 // Handlers
 //
 
-func showLogin(r render.Render, session sessions.Session, fb FacebookAuth) {
+func showLogin(r render.Render, fb FacebookAuth) {
 	data := make(map[string]interface{})
 	data["FacebookUrl"] = fb.DialogUrl()
-	data["Error"] = getError(session)
 	r.HTML(200, "auth", data)
 }
 
