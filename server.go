@@ -92,11 +92,6 @@ func main() {
 	m.Use(web.ContextWithCookieSecret(sessionKey))
 
 	//
-	// Mime
-	//
-	m.Use(mime)
-
-	//
 	// Router
 	//
 	prepareRouter(m)

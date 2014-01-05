@@ -34,9 +34,17 @@ jQuery(function ($) {
       };
     },
     componentDidMount: function () {
+      this.fetchDates(this.props.date);
+    },
+    componentWillReceiveProps: function (nextProps) {
+      if (this.props.date !== nextProps.date) {
+        this.fetchDates(nextProps.date);
+      }
+    },
+    fetchDates: function (date) {
       $.ajax({
         type: 'GET',
-        url: '/dates/' + this.props.date,
+        url: '/dates/' + date,
         dataType: 'json'
       }).done(function (data) {
         this.setState({
@@ -58,17 +66,17 @@ jQuery(function ($) {
         } else if (date.Date === this.props.date) {
           return <li><span className="mp-date-active">{day}</span></li>;
         } else {
-          return <li><a href={"/entries/" + date.Date}>{day}</a></li>;
+          return <li><a href={"#/" + date.Date}>{day}</a></li>;
         }
       }, this);
       if (this.state.prev) {
         items.unshift(
-          <li><a href={"/entries/" + this.state.prev}><i className="fa fa-arrow-left"></i></a></li>
+          <li><a href={"#/" + this.state.prev}><i className="fa fa-arrow-left"></i></a></li>
         );
       }
       if (this.state.next) {
         items.push(
-          <li><a href={"/entries/" + this.state.next}><i className="fa fa-arrow-right"></i></a></li>
+          <li><a href={"#/" + this.state.next}><i className="fa fa-arrow-right"></i></a></li>
         );
       }
       return <ul className="mp-entry-index">{items}</ul>;
@@ -148,7 +156,7 @@ jQuery(function ($) {
         if (auto) {
           this.wait();
         } else {
-          window.location = '#/';
+          window.location = '#/' + this.props.entry.get('Date');
         }
         return;
       }
@@ -158,7 +166,7 @@ jQuery(function ($) {
       // TODO: Block editing if not auto save.
       this.props.entry.save().done(function () {
         console.log('save success');
-        if (!auto)  window.location = '#/';
+        if (!auto)  window.location = '#/' + this.props.entry.get('Date');
       }.bind(this)).fail(function () {
         console.log('save failure', arguments[0].responseText);
         this.setState({ dirty: true });
@@ -204,12 +212,9 @@ jQuery(function ($) {
     getInitialState: function () {
       return {
         editing: false,
-        date: this.props.initialDate,
+        date: undefined,
         entry: undefined
       };
-    },
-    componentDidMount: function () {
-      this.fetchEntry(this.state.date);
     },
     componentWillUpdate: function (nextProps, nextState) {
       if (this.state.date !== nextState.date) {
@@ -226,15 +231,15 @@ jQuery(function ($) {
         console.log('Failed to get entry.');
       }.bind(this));
     },
-    show: function () {
-      this.setState({ editing: false });
+    show: function (date) {
+      this.setState({ date: date, editing: false });
     },
-    edit: function () {
-      this.setState({ editing: true });
+    edit: function (date) {
+      this.setState({ date: date, editing: true });
     },
     render: function () {
       if (!this.state.entry) {
-        return <div><EntryIndex date={this.state.date} /></div>;
+        return <div></div>;
       }
 
       var today = dateToString(new Date());
@@ -243,7 +248,8 @@ jQuery(function ($) {
       if (this.state.editing) {
         button = '';
       } else if (isEditable) {
-        button = <a className="btn btn-default btn-xs mp-edit-button" href="#/edit">編集</a>;
+        var editPath = '#/' + this.state.entry.get('Date') + '/edit';
+        button = <a className="btn btn-default btn-xs mp-edit-button" href={editPath}>編集</a>;
       } else {
         button = <button className="btn btn-default btn-xs mp-edit-button" disabled>編集できません</button>;
       }
@@ -260,15 +266,22 @@ jQuery(function ($) {
     }
   });
 
-  var dateString = window.location.pathname.split('/')[2];
   var app = React.renderComponent(
-    <EntryApp initialDate={dateString} />,
+    <EntryApp />,
     container
   );
 
+  function showToday() {
+    window.location = '#/' + dateToString(new Date());
+  }
+
   var router = new Router({
-    '/': app.show.bind(app),
-    '/edit': app.edit.bind(app)
+    '/': showToday,
+    '/:date': app.show.bind(app),
+    '/:date/edit': app.edit.bind(app),
+    // Facebook callback redirects to URL with '#_=_'.
+    // http://stackoverflow.com/questions/7131909/facebook-callback-appends-to-return-url
+    '_=_': showToday
   });
-  router.init();
+  router.init('/');
 });
