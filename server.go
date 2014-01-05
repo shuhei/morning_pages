@@ -21,6 +21,7 @@ func prepareRouter(m *martini.ClassicMartini) {
 
 	m.Get("/entries/:date", authorize, validateDate, showEntry)
 	m.Post("/entries/:date", authorize, validateDate, saveEntry)
+	m.Put("/entries/:date", authorize, validateDate, saveEntry)
 
 	m.Get("/dates/:date", authorize, validateDate, showDates)
 }

@@ -1,10 +1,12 @@
 package main
 
 import (
+	"encoding/json"
 	"github.com/codegangsta/martini"
 	"github.com/codegangsta/martini-contrib/render"
 	"github.com/codegangsta/martini-contrib/sessions"
 	"github.com/codegangsta/martini-contrib/web"
+	"io/ioutil"
 	"labix.org/v2/mgo"
 	"log"
 	"net/http"
@@ -146,18 +148,32 @@ func showEntry(ctx *web.Context, ren render.Render, db *mgo.Database, params mar
 	}
 }
 
-func saveEntry(ctx *web.Context, db *mgo.Database, params martini.Params, user *User) {
+func saveEntry(ctx *web.Context, ren render.Render, db *mgo.Database, params martini.Params, user *User, l *log.Logger) {
 	date := params["date"]
 	if date != todayString() {
 		ctx.Abort(http.StatusBadRequest, "Past entries are not editable")
 		return
 	}
 
-	body := ctx.Request.FormValue("body")
-	err := upsertEntry(db, user, date, body)
+	requestBody, err := ioutil.ReadAll(ctx.Request.Body)
 	if err != nil {
 		ctx.Abort(http.StatusInternalServerError, err.Error())
 		return
 	}
-	ctx.Redirect(http.StatusFound, "/entries/"+date)
+	entry := newEntry(user, date)
+	err = json.Unmarshal(requestBody, &entry)
+	if err != nil {
+		ctx.Abort(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// TODO: Pass entry itself to upsert.
+	err = upsertEntry(db, user, date, entry.Body)
+	if err != nil {
+		ctx.Abort(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// TODO: Return entry as JSON.
+	ren.JSON(200, make(map[string]interface{}))
 }
