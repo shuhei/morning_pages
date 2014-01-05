@@ -169,7 +169,7 @@ jQuery(function ($) {
     wait: function () {
       setTimeout(this.save.bind(this, true), 15 * 1000);
     },
-    onKeyUp: function (e) {
+    handleChange: function (e) {
       this.props.entry.set('Body', e.target.value);
       this.setState({ dirty: true });
     },
@@ -185,9 +185,8 @@ jQuery(function ($) {
       return (
         <div className="form" id="mp-entry-form">
           <div className="form-group" id="mp-entry-body">
-            <textarea name="body" rows="20" cols="80" className="form-control" onKeyUp={this.onKeyUp}>
-              {this.props.entry.get('Body')}
-            </textarea>
+            <textarea name="body" rows="20" cols="80" className="form-control"
+                      value={this.props.entry.get('Body')} onChange={this.handleChange} />
           </div>
           <div className="form-group">
             <button className="btn btn-default" onClick={this.save.bind(this, false)}>完了</button>
