@@ -8,9 +8,22 @@ jQuery(function ($) {
     return { __html: str.replace(/\r?\n/g, '<br />') };
   }
 
+  function pad(num) {
+    var str = num.toString();
+    if (str.length === 1) {
+      str = '0' + str;
+    }
+    return str;
+  }
+
+  function dateToString(date) {
+    return [date.getFullYear(), date.getMonth() + 1, date.getDate()].map(pad).join('-');
+  }
+
   var View = React.createClass({
     render: function () {
-      var isEditable = true;
+      var today = dateToString(new Date());
+      var isEditable = today === this.props.entry.Date;
       var button;
       if (isEditable) {
         button = <a href={"/entries/" + this.props.entry.Date + "/edit"} className="btn btn-default btn-xs mp-edit-button">編集</a>;
