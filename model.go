@@ -7,6 +7,10 @@ import (
 	"time"
 )
 
+//
+// User
+//
+
 const UserCollectionName = "users"
 
 type User struct {
@@ -20,26 +24,40 @@ type FacebookUser struct {
 	Name string
 }
 
-func findUserById(db *mgo.Database, userId string) (*User, error) {
+type UserStore interface {
+	Get(userId string) (*User, error)
+	FindByFacebook(fbUser *FacebookUser) (*User, error)
+	CreateByFacebook(fbUser *FacebookUser) (*User, error)
+}
+
+type userStore struct {
+	db *mgo.Database
+}
+
+func (store *userStore) Get(userId string) (*User, error) {
 	var user User
-	err := db.C(UserCollectionName).FindId(bson.ObjectIdHex(userId)).One(&user)
+	err := store.db.C(UserCollectionName).FindId(bson.ObjectIdHex(userId)).One(&user)
 	return &user, err
 }
 
-func findFacebookUser(db *mgo.Database, fbUser *FacebookUser) (*User, error) {
+func (store *userStore) FindByFacebook(fbUser *FacebookUser) (*User, error) {
 	var user User
-	err := db.C(UserCollectionName).Find(bson.M{"uid": fbUser.Id}).One(&user)
+	err := store.db.C(UserCollectionName).Find(bson.M{"uid": fbUser.Id}).One(&user)
 	return &user, err
 }
 
-func insertFacebookUser(db *mgo.Database, fbUser *FacebookUser) (*User, error) {
+func (store *userStore) CreateByFacebook(fbUser *FacebookUser) (*User, error) {
 	user := &User{Id: bson.NewObjectId(), Uid: fbUser.Id, Name: fbUser.Name}
-	err := db.C(UserCollectionName).Insert(user)
+	err := store.db.C(UserCollectionName).Insert(user)
 	if err != nil {
 		return nil, err
 	}
 	return user, nil
 }
+
+//
+// Entry
+//
 
 const EntryCollectionName = "entries"
 
@@ -50,19 +68,33 @@ type Entry struct {
 	UserId bson.ObjectId `bson:"user_id"`
 }
 
+func NewEntry(user *User, date string) *Entry {
+	return &Entry{Id: bson.NewObjectId(), Date: date, Body: "", UserId: user.Id}
+}
+
 type DateEntry struct {
 	Date     string
 	HasEntry bool
 	IsFuture bool
 }
 
-func findEntry(db *mgo.Database, user *User, date string) (*Entry, error) {
+type EntryStore interface {
+	Find(user *User, date string) (*Entry, error)
+	FindDates(user *User, t time.Time, now time.Time) ([]DateEntry, error)
+	Upsert(user *User, date string, body string) error
+}
+
+type entryStore struct {
+	db *mgo.Database
+}
+
+func (store *entryStore) Find(user *User, date string) (*Entry, error) {
 	var entry Entry
-	err := db.C(EntryCollectionName).Find(bson.M{"user_id": user.Id, "date": date}).One(&entry)
+	err := store.db.C(EntryCollectionName).Find(bson.M{"user_id": user.Id, "date": date}).One(&entry)
 	return &entry, err
 }
 
-func findEntryDates(db *mgo.Database, user *User, t time.Time, now time.Time) ([]DateEntry, error) {
+func (store *entryStore) FindDates(user *User, t time.Time, now time.Time) ([]DateEntry, error) {
 	year, month, _ := t.Year(), t.Month(), t.Day()
 	days := daysIn(month, year)
 	start, end := dateString(year, month, 1), dateString(year, month, days)
@@ -73,7 +105,7 @@ func findEntryDates(db *mgo.Database, user *User, t time.Time, now time.Time) ([
 	}
 	selector := bson.M{"date": 1}
 	var entries []Entry
-	err := db.C(EntryCollectionName).Find(query).Select(selector).Sort("date").All(&entries)
+	err := store.db.C(EntryCollectionName).Find(query).Select(selector).Sort("date").All(&entries)
 	if err != nil {
 		return nil, err
 	}
@@ -94,16 +126,16 @@ func findEntryDates(db *mgo.Database, user *User, t time.Time, now time.Time) ([
 	return dates, nil
 }
 
-func upsertEntry(db *mgo.Database, user *User, date string, body string) error {
+func (store *entryStore) Upsert(user *User, date string, body string) error {
 	query := bson.M{"date": date, "user_id": user.Id}
 	entry := bson.M{"date": date, "user_id": user.Id, "body": body}
-	_, err := db.C(EntryCollectionName).Upsert(query, entry)
+	_, err := store.db.C(EntryCollectionName).Upsert(query, entry)
 	return err
 }
 
-func newEntry(user *User, date string) *Entry {
-	return &Entry{Id: bson.NewObjectId(), Date: date, Body: "", UserId: user.Id}
-}
+//
+// Utils
+//
 
 // https://groups.google.com/forum/#!topic/golang-nuts/W-ezk71hioo
 func daysIn(m time.Month, year int) int {

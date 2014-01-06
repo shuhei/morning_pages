@@ -6,10 +6,10 @@ import (
 	"time"
 )
 
-func Test_newEntry(t *testing.T) {
+func Test_NewEntry(t *testing.T) {
 	user := &User{Id: bson.NewObjectId(), Uid: "mm", Name: "Mitsuru Murakami"}
 	date := "2013-12-23"
-	entry := newEntry(user, date)
+	entry := NewEntry(user, date)
 
 	if entry.Date != date {
 		t.Errorf("Expected %s but got %s", date, entry.Date)

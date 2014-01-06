@@ -8,7 +8,6 @@ import (
 	"github.com/codegangsta/martini-contrib/sessions"
 	"github.com/codegangsta/martini-contrib/web"
 	"io/ioutil"
-	"labix.org/v2/mgo"
 	"log"
 	"net/http"
 	"net/url"
@@ -153,10 +152,10 @@ func getUserInfo(ctx *web.Context, c martini.Context, token FacebookToken, fb Fa
 	c.Map(userInfo)
 }
 
-func findOrCreateUser(ctx *web.Context, fbUser *FacebookUser, db *mgo.Database, session sessions.Session) {
-	user, err := findFacebookUser(db, fbUser)
+func findOrCreateUser(ctx *web.Context, fbUser *FacebookUser, users UserStore, session sessions.Session) {
+	user, err := users.FindByFacebook(fbUser)
 	if err != nil {
-		user, err = insertFacebookUser(db, fbUser)
+		user, err = users.CreateByFacebook(fbUser)
 		if err != nil {
 			log.Println("Failed to create a user")
 			log.Println(err)

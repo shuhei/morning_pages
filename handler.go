@@ -7,7 +7,6 @@ import (
 	"github.com/codegangsta/martini-contrib/sessions"
 	"github.com/codegangsta/martini-contrib/web"
 	"io/ioutil"
-	"labix.org/v2/mgo"
 	"log"
 	"net/http"
 	"time"
@@ -19,7 +18,7 @@ const SessionUserIdKey string = "user-id"
 // Filters
 //
 
-func authorize(ctx *web.Context, db *mgo.Database, c martini.Context, session sessions.Session, l *log.Logger) {
+func authorize(ctx *web.Context, users UserStore, c martini.Context, session sessions.Session, l *log.Logger) {
 	userId := session.Get(SessionUserIdKey)
 	if userId == nil || userId == "" {
 		l.Println("Unauthorized access")
@@ -27,7 +26,7 @@ func authorize(ctx *web.Context, db *mgo.Database, c martini.Context, session se
 		return
 	}
 
-	user, err := findUserById(db, userId.(string))
+	user, err := users.Get(userId.(string))
 	if err != nil {
 		l.Println("User not found")
 		session.Delete(SessionUserIdKey)
@@ -60,16 +59,16 @@ func rootHandler(ren render.Render, user *User) {
 // JSON APIs
 //
 
-func showEntry(ren render.Render, db *mgo.Database, params martini.Params, user *User) {
+func showEntry(ren render.Render, entries EntryStore, params martini.Params, user *User) {
 	date := params["date"]
-	entry, err := findEntry(db, user, date)
+	entry, err := entries.Find(user, date)
 	if err != nil {
-		entry = newEntry(user, date)
+		entry = NewEntry(user, date)
 	}
 	ren.JSON(200, entry)
 }
 
-func saveEntry(ctx *web.Context, ren render.Render, db *mgo.Database, params martini.Params, user *User, l *log.Logger) {
+func saveEntry(ctx *web.Context, ren render.Render, entries EntryStore, params martini.Params, user *User, l *log.Logger) {
 	date := params["date"]
 	if date != todayString() {
 		ctx.Abort(http.StatusBadRequest, "Past entries are not editable")
@@ -81,7 +80,7 @@ func saveEntry(ctx *web.Context, ren render.Render, db *mgo.Database, params mar
 		ctx.Abort(http.StatusInternalServerError, err.Error())
 		return
 	}
-	entry := newEntry(user, date)
+	entry := NewEntry(user, date)
 	err = json.Unmarshal(requestBody, &entry)
 	if err != nil {
 		ctx.Abort(http.StatusInternalServerError, err.Error())
@@ -89,7 +88,7 @@ func saveEntry(ctx *web.Context, ren render.Render, db *mgo.Database, params mar
 	}
 
 	// TODO: Pass entry itself to upsert.
-	err = upsertEntry(db, user, date, entry.Body)
+	err = entries.Upsert(user, date, entry.Body)
 	if err != nil {
 		ctx.Abort(http.StatusInternalServerError, err.Error())
 		return
@@ -99,14 +98,14 @@ func saveEntry(ctx *web.Context, ren render.Render, db *mgo.Database, params mar
 	ren.JSON(200, make(map[string]interface{}))
 }
 
-func showDates(ctx *web.Context, ren render.Render, db *mgo.Database, params martini.Params, user *User) {
+func showDates(ctx *web.Context, ren render.Render, entries EntryStore, params martini.Params, user *User) {
 	now := time.Now()
 	date, err := parseDate(params["date"])
 	if err != nil {
 		ctx.Abort(http.StatusInternalServerError, err.Error())
 		return
 	}
-	dates, err := findEntryDates(db, user, date, now)
+	dates, err := entries.FindDates(user, date, now)
 	if err != nil {
 		ctx.Abort(http.StatusInternalServerError, err.Error())
 		return

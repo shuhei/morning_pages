@@ -59,7 +59,8 @@ func main() {
 	})
 
 	db := session.DB("") // Use database specified in the URL.
-	m.Map(db)
+	m.MapTo(&userStore{db}, (*UserStore)(nil))
+	m.MapTo(&entryStore{db}, (*EntryStore)(nil))
 
 	//
 	// Session
