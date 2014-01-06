@@ -84,13 +84,14 @@ jQuery(function ($) {
   });
 
   var Entry = Backbone.Model.extend({
-    idAttribute: 'Date',
-    urlRoot: '/entries',
+    url: function () {
+      return '/entries/' + this.get('date');
+    },
     defaults: {
-      Body: ''
+      body: ''
     },
     count: function () {
-      return this.get('Body').length;
+      return this.get('body').length;
     }
   });
 
@@ -130,7 +131,7 @@ jQuery(function ($) {
     render: function () {
       return (
         <div>
-          <div dangerouslySetInnerHTML={ { __html: lineBreak(this.props.entry.get('Body')) } } />
+          <div dangerouslySetInnerHTML={ { __html: lineBreak(this.props.entry.get('body')) } } />
           <p className="pull-right"><span className="char-count">{this.props.entry.count()}</span> 文字</p>
         </div>
       );
@@ -156,7 +157,7 @@ jQuery(function ($) {
         if (auto) {
           this.wait();
         } else {
-          window.location = '#/' + this.props.entry.get('Date');
+          window.location = '#/' + this.props.entry.get('date');
         }
         return;
       }
@@ -166,7 +167,7 @@ jQuery(function ($) {
       // TODO: Block editing if not auto save.
       this.props.entry.save().done(function () {
         console.log('save success');
-        if (!auto)  window.location = '#/' + this.props.entry.get('Date');
+        if (!auto)  window.location = '#/' + this.props.entry.get('date');
       }.bind(this)).fail(function () {
         console.log('save failure', arguments[0].responseText);
         this.setState({ dirty: true });
@@ -178,7 +179,7 @@ jQuery(function ($) {
       setTimeout(this.save.bind(this, true), 15 * 1000);
     },
     handleChange: function (e) {
-      this.props.entry.set('Body', e.target.value);
+      this.props.entry.set('body', e.target.value);
       this.setState({ dirty: true });
     },
     render: function () {
@@ -194,7 +195,7 @@ jQuery(function ($) {
         <div className="form" id="mp-entry-form">
           <div className="form-group" id="mp-entry-body">
             <textarea name="body" rows="20" cols="80" className="form-control"
-                      value={this.props.entry.get('Body')} onChange={this.handleChange} />
+                      value={this.props.entry.get('body')} onChange={this.handleChange} />
           </div>
           <div className="form-group">
             <button className="btn btn-default" onClick={this.save.bind(this, false)}>完了</button>
@@ -223,12 +224,16 @@ jQuery(function ($) {
       }
     },
     fetchEntry: function (date) {
-      // TODO: Avoid fetching multiple entries at the same time.
-      var entry = new Entry({ Date: date });
+      // TODO: Fetch enrties on ahead.
+      var entry = new Entry({ date: date });
       entry.fetch().done(function () {
         this.setState({ entry: entry });
-      }.bind(this)).fail(function () {
-        console.log('Failed to get entry.');
+      }.bind(this)).fail(function (xhr) {
+        if (xhr.status === 404) {
+          this.setState({ entry: entry });
+        } else {
+          console.log('Failed to get entry.');
+        }
       }.bind(this));
     },
     show: function (date) {
@@ -243,12 +248,12 @@ jQuery(function ($) {
       }
 
       var today = dateToString(new Date());
-      var isEditable = today === this.state.entry.get('Date');
+      var isEditable = today === this.state.entry.get('date');
       var button;
       if (this.state.editing) {
         button = '';
       } else if (isEditable) {
-        var editPath = '#/' + this.state.entry.get('Date') + '/edit';
+        var editPath = '#/' + this.state.entry.get('date') + '/edit';
         button = <a className="btn btn-default btn-xs mp-edit-button" href={editPath}>編集</a>;
       } else {
         button = <button className="btn btn-default btn-xs mp-edit-button" disabled>編集できません</button>;
@@ -256,7 +261,7 @@ jQuery(function ($) {
       return (
         <div>
           <EntryIndex date={this.state.date} />
-          <h2>{this.state.entry.get('Date')} {button}</h2>
+          <h2>{this.state.entry.get('date')} {button}</h2>
           {this.state.editing ? 
             <Edit entry={this.state.entry} /> :
             <View entry={this.state.entry} />

@@ -62,10 +62,10 @@ func (store *userStore) CreateByFacebook(fbUser *FacebookUser) (*User, error) {
 const EntryCollectionName = "entries"
 
 type Entry struct {
-	Id     bson.ObjectId `bson:"_id"`
-	Date   string        `bson:"date"`
-	Body   string        `bson:"body"`
-	UserId bson.ObjectId `bson:"user_id"`
+	Id     bson.ObjectId `bson:"_id" json:"id"`
+	Date   string        `bson:"date" json:"date"`
+	Body   string        `bson:"body" json:"body"`
+	UserId bson.ObjectId `bson:"user_id" json:"userId"`
 }
 
 func NewEntry(user *User, date string) *Entry {
@@ -81,7 +81,8 @@ type DateEntry struct {
 type EntryStore interface {
 	Find(user *User, date string) (*Entry, error)
 	FindDates(user *User, t time.Time, now time.Time) ([]DateEntry, error)
-	Upsert(user *User, date string, body string) error
+	Create(entry *Entry) (bson.ObjectId, error)
+	Update(entry *Entry) error
 }
 
 type entryStore struct {
@@ -90,7 +91,15 @@ type entryStore struct {
 
 func (store *entryStore) Find(user *User, date string) (*Entry, error) {
 	var entry Entry
-	err := store.db.C(EntryCollectionName).Find(bson.M{"user_id": user.Id, "date": date}).One(&entry)
+	q := store.db.C(EntryCollectionName).Find(bson.M{"user_id": user.Id, "date": date})
+	count, err := q.Count()
+	if err != nil {
+		return nil, err
+	}
+	if count == 0 {
+		return nil, nil
+	}
+	err = q.One(&entry)
 	return &entry, err
 }
 
@@ -126,10 +135,14 @@ func (store *entryStore) FindDates(user *User, t time.Time, now time.Time) ([]Da
 	return dates, nil
 }
 
-func (store *entryStore) Upsert(user *User, date string, body string) error {
-	query := bson.M{"date": date, "user_id": user.Id}
-	entry := bson.M{"date": date, "user_id": user.Id, "body": body}
-	_, err := store.db.C(EntryCollectionName).Upsert(query, entry)
+func (store *entryStore) Create(entry *Entry) (bson.ObjectId, error) {
+	entry.Id = bson.NewObjectId()
+	err := store.db.C(EntryCollectionName).Insert(entry)
+	return entry.Id, err
+}
+
+func (store *entryStore) Update(entry *Entry) error {
+	err := store.db.C(EntryCollectionName).UpdateId(entry.Id, entry)
 	return err
 }
 
