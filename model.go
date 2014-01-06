@@ -80,6 +80,7 @@ type DateEntry struct {
 
 type EntryStore interface {
 	Find(user *User, date string) (*Entry, error)
+	FindByDate(user *User, from, to string) ([]Entry, error)
 	FindDates(user *User, t time.Time, now time.Time) ([]DateEntry, error)
 	Create(entry *Entry) (bson.ObjectId, error)
 	Update(entry *Entry) error
@@ -101,6 +102,24 @@ func (store *entryStore) Find(user *User, date string) (*Entry, error) {
 	}
 	err = q.One(&entry)
 	return &entry, err
+}
+
+func (store *entryStore) FindByDate(user *User, from, to string) ([]Entry, error) {
+	var entries []Entry
+	dateQuery := bson.M{}
+	if from != "" {
+		dateQuery["$gte"] = from
+	}
+	if to != "" {
+		dateQuery["$lte"] = to
+	}
+	query := bson.M{"user_id": user.Id}
+	if len(dateQuery) > 0 {
+		query["date"] = dateQuery
+	}
+	fmt.Println(query)
+	err := store.db.C(EntryCollectionName).Find(query).All(&entries)
+	return entries, err
 }
 
 func (store *entryStore) FindDates(user *User, t time.Time, now time.Time) ([]DateEntry, error) {

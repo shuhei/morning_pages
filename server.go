@@ -19,6 +19,7 @@ func prepareRouter(m *martini.ClassicMartini) {
 	m.Get("/auth/logout", Logout)
 	m.Get("/auth/callback", GetAccessToken, GetUserInfo, FindOrCreateUser)
 
+	m.Get("/entries", Authorize, GetEntries)
 	m.Get("/entries/:date", Authorize, ValidateDate, GetEntry)
 	m.Post("/entries/:date", Authorize, ValidateDate, CreateEntry)
 	m.Put("/entries/:date", Authorize, ValidateDate, UpdateEntry)

@@ -73,6 +73,17 @@ func GetEntry(ctx *web.Context, ren render.Render, entries EntryStore, params ma
 	ren.JSON(200, entry)
 }
 
+func GetEntries(ctx *web.Context, ren render.Render, entries EntryStore, user *User) {
+	from := ctx.Params["from"]
+	to := ctx.Params["to"]
+	es, err := entries.FindByDate(user, from, to)
+	if err != nil {
+		ctx.Abort(http.StatusInternalServerError, err.Error())
+		return
+	}
+	ren.JSON(200, es)
+}
+
 func CreateEntry(ctx *web.Context, ren render.Render, entries EntryStore, params martini.Params, user *User, l *log.Logger) {
 	// TODO: Extract as filter.
 	date := params["date"]
