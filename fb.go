@@ -110,18 +110,18 @@ func (fb *facebookAuth) GetUserInfo(userUrl string) (*FacebookUser, error) {
 // Handlers
 //
 
-func showLogin(r render.Render, fb FacebookAuth) {
+func ShowLogin(r render.Render, fb FacebookAuth) {
 	data := make(map[string]interface{})
 	data["FacebookUrl"] = fb.DialogUrl()
 	r.HTML(200, "auth", data)
 }
 
-func logout(ctx *web.Context, session sessions.Session) {
+func Logout(ctx *web.Context, session sessions.Session) {
 	session.Delete(SessionUserIdKey)
 	ctx.Redirect(http.StatusFound, "/auth")
 }
 
-func getAccessToken(ctx *web.Context, c martini.Context, fb FacebookAuth) {
+func GetAccessToken(ctx *web.Context, c martini.Context, fb FacebookAuth) {
 	// TODO: Handle the case user cancelled logging in.
 
 	// Get access token with the code.
@@ -141,7 +141,7 @@ func getAccessToken(ctx *web.Context, c martini.Context, fb FacebookAuth) {
 	c.Map(token)
 }
 
-func getUserInfo(ctx *web.Context, c martini.Context, token FacebookToken, fb FacebookAuth) {
+func GetUserInfo(ctx *web.Context, c martini.Context, token FacebookToken, fb FacebookAuth) {
 	userUrl := fb.MyUrl(token)
 	userInfo, err := fb.GetUserInfo(userUrl)
 	if err != nil {
@@ -152,7 +152,7 @@ func getUserInfo(ctx *web.Context, c martini.Context, token FacebookToken, fb Fa
 	c.Map(userInfo)
 }
 
-func findOrCreateUser(ctx *web.Context, fbUser *FacebookUser, users UserStore, session sessions.Session) {
+func FindOrCreateUser(ctx *web.Context, fbUser *FacebookUser, users UserStore, session sessions.Session) {
 	user, err := users.FindByFacebook(fbUser)
 	if err != nil {
 		user, err = users.CreateByFacebook(fbUser)

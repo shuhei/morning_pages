@@ -13,17 +13,17 @@ import (
 )
 
 func prepareRouter(m *martini.ClassicMartini) {
-	m.Get("/", authorize, rootHandler)
+	m.Get("/", Authorize, ShowRoot)
 
-	m.Get("/auth", showLogin)
-	m.Get("/auth/logout", logout)
-	m.Get("/auth/callback", getAccessToken, getUserInfo, findOrCreateUser)
+	m.Get("/auth", ShowLogin)
+	m.Get("/auth/logout", Logout)
+	m.Get("/auth/callback", GetAccessToken, GetUserInfo, FindOrCreateUser)
 
-	m.Get("/entries/:date", authorize, validateDate, showEntry)
-	m.Post("/entries/:date", authorize, validateDate, saveEntry)
-	m.Put("/entries/:date", authorize, validateDate, saveEntry)
+	m.Get("/entries/:date", Authorize, ValidateDate, GetEntry)
+	m.Post("/entries/:date", Authorize, ValidateDate, SaveEntry)
+	m.Put("/entries/:date", Authorize, ValidateDate, SaveEntry)
 
-	m.Get("/dates/:date", authorize, validateDate, showDates)
+	m.Get("/dates/:date", Authorize, ValidateDate, GetEntryDates)
 }
 
 // Execute cleanup func when the server is killed.

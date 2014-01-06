@@ -7,11 +7,11 @@ import (
 	"testing"
 )
 
-func Test_validateDate_invalid(t *testing.T) {
+func Test_ValidateDate_invalid(t *testing.T) {
 	w := httptest.NewRecorder()
 	ctx := &web.Context{ResponseWriter: w}
 	p := martini.Params{"date": "2013-1-1"}
-	validateDate(ctx, p)
+	ValidateDate(ctx, p)
 
 	badRequest := 400
 	if w.Code != badRequest {
@@ -19,11 +19,11 @@ func Test_validateDate_invalid(t *testing.T) {
 	}
 }
 
-func Test_validateDate_valid(t *testing.T) {
+func Test_ValidateDate_valid(t *testing.T) {
 	w := httptest.NewRecorder()
 	ctx := &web.Context{ResponseWriter: w}
 	p := martini.Params{"date": "2013-01-01"}
-	validateDate(ctx, p)
+	ValidateDate(ctx, p)
 
 	badRequest := 200
 	if w.Code != badRequest {

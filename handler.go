@@ -18,7 +18,7 @@ const SessionUserIdKey string = "user-id"
 // Filters
 //
 
-func authorize(ctx *web.Context, users UserStore, c martini.Context, session sessions.Session, l *log.Logger) {
+func Authorize(ctx *web.Context, users UserStore, c martini.Context, session sessions.Session, l *log.Logger) {
 	userId := session.Get(SessionUserIdKey)
 	if userId == nil || userId == "" {
 		l.Println("Unauthorized access")
@@ -37,7 +37,7 @@ func authorize(ctx *web.Context, users UserStore, c martini.Context, session ses
 	c.Map(user)
 }
 
-func validateDate(ctx *web.Context, params martini.Params) {
+func ValidateDate(ctx *web.Context, params martini.Params) {
 	date := params["date"]
 	if !isValidDate(date) {
 		ctx.Abort(http.StatusBadRequest, "Invalid date. e.g. 2014-01-02")
@@ -49,7 +49,7 @@ func validateDate(ctx *web.Context, params martini.Params) {
 // Handlers
 //
 
-func rootHandler(ren render.Render, user *User) {
+func ShowRoot(ren render.Render, user *User) {
 	data := make(map[string]interface{})
 	data["CurrentUser"] = user
 	ren.HTML(200, "view", data)
@@ -59,7 +59,7 @@ func rootHandler(ren render.Render, user *User) {
 // JSON APIs
 //
 
-func showEntry(ren render.Render, entries EntryStore, params martini.Params, user *User) {
+func GetEntry(ren render.Render, entries EntryStore, params martini.Params, user *User) {
 	date := params["date"]
 	entry, err := entries.Find(user, date)
 	if err != nil {
@@ -68,7 +68,7 @@ func showEntry(ren render.Render, entries EntryStore, params martini.Params, use
 	ren.JSON(200, entry)
 }
 
-func saveEntry(ctx *web.Context, ren render.Render, entries EntryStore, params martini.Params, user *User, l *log.Logger) {
+func SaveEntry(ctx *web.Context, ren render.Render, entries EntryStore, params martini.Params, user *User, l *log.Logger) {
 	date := params["date"]
 	if date != todayString() {
 		ctx.Abort(http.StatusBadRequest, "Past entries are not editable")
@@ -98,7 +98,7 @@ func saveEntry(ctx *web.Context, ren render.Render, entries EntryStore, params m
 	ren.JSON(200, make(map[string]interface{}))
 }
 
-func showDates(ctx *web.Context, ren render.Render, entries EntryStore, params martini.Params, user *User) {
+func GetEntryDates(ctx *web.Context, ren render.Render, entries EntryStore, params martini.Params, user *User) {
 	now := time.Now()
 	date, err := parseDate(params["date"])
 	if err != nil {
