@@ -118,17 +118,17 @@ jQuery(function ($) {
         } else if (date.Date === this.props.date) {
           return <li><span className="mp-date-active">{day}</span></li>;
         } else {
-          return <li><a href={"#/" + date.Date}>{day}</a></li>;
+          return <li><a href={"#entries/" + date.Date}>{day}</a></li>;
         }
       }, this);
       if (this.state.prev) {
         items.unshift(
-          <li><a href={"#/" + this.state.prev}><i className="fa fa-arrow-left"></i></a></li>
+          <li><a href={"#entries/" + this.state.prev}><i className="fa fa-arrow-left"></i></a></li>
         );
       }
       if (this.state.next) {
         items.push(
-          <li><a href={"#/" + this.state.next}><i className="fa fa-arrow-right"></i></a></li>
+          <li><a href={"#entries/" + this.state.next}><i className="fa fa-arrow-right"></i></a></li>
         );
       }
       return <ul className="mp-entry-index">{items}</ul>;
@@ -293,7 +293,7 @@ jQuery(function ($) {
       if (this.state.editing) {
         button = '';
       } else if (isEditable) {
-        var editPath = '#/' + this.state.entry.get('date') + '/edit';
+        var editPath = '#entries/' + this.state.entry.get('date') + '/edit';
         button = <a className="btn btn-default btn-xs mp-edit-button" href={editPath}>編集</a>;
       } else {
         button = <button className="btn btn-default btn-xs mp-edit-button" disabled>編集できません</button>;
@@ -320,18 +320,28 @@ jQuery(function ($) {
   // Router
   //
 
-  function showToday() {
-    window.location = '#/' + dateToString(new Date());
-  }
-
-  // TODO: Use Backbone Router instead.
-  var router = new Router({
-    '/': showToday,
-    '/:date': app.show.bind(app),
-    '/:date/edit': app.edit.bind(app),
-    // Facebook callback redirects to URL with '#_=_'.
-    // http://stackoverflow.com/questions/7131909/facebook-callback-appends-to-return-url
-    '_=_': showToday
+  var AppRouter = Backbone.Router.extend({
+    initialize: function (options) {
+      this.app = options.app;
+    },
+    routes: {
+      '': 'showToday',
+      'entries/:date': 'show',
+      'entries/:date/edit': 'edit',
+      // Facebook callback redirects to URL with '#_=_'.
+      // http://stackoverflow.com/questions/7131909/facebook-callback-appends-to-return-url
+      '_=_': 'showToday'
+    },
+    show: function (date) {
+      this.app.show(date);
+    },
+    edit: function (date) {
+      this.app.edit(date);
+    },
+    showToday: function () {
+      this.navigate('entries/' + dateToString(new Date()), { trigger: true });
+    }
   });
-  router.init('/');
+  new AppRouter({ app: app });
+  Backbone.history.start();
 });
