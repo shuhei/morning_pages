@@ -4,6 +4,10 @@ jQuery(function ($) {
   var container = document.getElementById('mp-view-container');
   if (!container) return;
 
+  //
+  // Utils
+  //
+
   function lineBreak(str) {
     return str.replace(/\r?\n/g, '<br />');
   }
@@ -20,9 +24,57 @@ jQuery(function ($) {
     return [date.getFullYear(), date.getMonth() + 1, date.getDate()].map(pad).join('-');
   }
 
+  function parseDate(str) {
+    var cs = str.split('-').map(function (c) { return parseInt(c, 10); });
+    return new Date(cs[0], cs[1] - 1, cs[2]);
+  }
+
+  function beginningOfMonth(date) {
+    return new Date(date.getFullYear(), date.getMonth(), 1);
+  }
+
+  function endOfMonth(date) {
+    return new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
+  }
+
   function extractDay(dateString) {
     return dateString.split('-')[2].replace(/^0/, '');
   }
+
+  //
+  // Model & Collection
+  //
+
+  var Entry = Backbone.Model.extend({
+    url: function () {
+      return '/entries/' + this.get('date');
+    },
+    defaults: {
+      body: ''
+    },
+    count: function () {
+      return this.get('body').length;
+    }
+  });
+
+  var EntryList = Backbone.Collection.extend({
+    model: Entry,
+    initialize: function (models, options) {
+      this.from = options.from;
+      this.to = options.to;
+    },
+    url: function () {
+      var params = { from: this.from, to: this.to };
+      var query = _.map(params, function (v, k) {
+        return k + '=' + encodeURIComponent(v);
+      }).join('&');
+      return '/entries?' + query;
+    }
+  });
+
+  //
+  // Components
+  //
 
   var EntryIndex = React.createClass({
     getInitialState: function () {
@@ -80,18 +132,6 @@ jQuery(function ($) {
         );
       }
       return <ul className="mp-entry-index">{items}</ul>;
-    }
-  });
-
-  var Entry = Backbone.Model.extend({
-    url: function () {
-      return '/entries/' + this.get('date');
-    },
-    defaults: {
-      body: ''
-    },
-    count: function () {
-      return this.get('body').length;
     }
   });
 
@@ -276,10 +316,15 @@ jQuery(function ($) {
     container
   );
 
+  //
+  // Router
+  //
+
   function showToday() {
     window.location = '#/' + dateToString(new Date());
   }
 
+  // TODO: Use Backbone Router instead.
   var router = new Router({
     '/': showToday,
     '/:date': app.show.bind(app),
