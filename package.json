@@ -8,6 +8,9 @@
   },
   "author": "Shuhei Kagawa <shuhei.kagawa@gmail.com>",
   "readmeFilename": "README.md",
+  "engines": {
+    "node": "0.10.x"
+  },
   "dependencies": {
     "bower": "~1.2.8"
   },
