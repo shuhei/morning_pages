@@ -197,7 +197,7 @@ jQuery(function ($) {
         if (auto) {
           this.wait();
         } else {
-          window.location = '#/' + this.props.entry.get('date');
+          window.location = '#/entries/' + this.props.entry.get('date');
         }
         return;
       }
@@ -207,7 +207,7 @@ jQuery(function ($) {
       // TODO: Block editing if not auto save.
       this.props.entry.save().done(function () {
         console.log('save success');
-        if (!auto)  window.location = '#/' + this.props.entry.get('date');
+        if (!auto)  window.location = '#/entries/' + this.props.entry.get('date');
       }.bind(this)).fail(function () {
         console.log('save failure', arguments[0].responseText);
         this.setState({ dirty: true });
