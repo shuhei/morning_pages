@@ -1,0 +1,17 @@
+{
+  "name": "morning_pages",
+  "version": "0.0.0",
+  "description": "A [Morning Pages](http://juliacameronlive.com/basic-tools/morning-pages/) app written in Go for [scriptio continua](http://en.wikipedia.org/wiki/Scriptio_continua).",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/shuhei/morning_pages.git"
+  },
+  "author": "Shuhei Kagawa <shuhei.kagawa@gmail.com>",
+  "readmeFilename": "README.md",
+  "dependencies": {
+    "bower": "~1.2.8"
+  },
+  "scripts": {
+    "postinstall": "./node_modules/bower/bin/bower install"
+  }
+}

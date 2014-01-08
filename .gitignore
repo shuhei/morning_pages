@@ -1,2 +1,5 @@
 .env
+.gitignore
+node_modules
+public/bower_components
 
