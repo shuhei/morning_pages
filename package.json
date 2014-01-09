@@ -22,6 +22,6 @@
   },
   "scripts": {
     "postinstall":
-      "./node_modules/.bin/bower install && ./node_modules/.bin/gulp"
+      "./node_modules/bower/bin/bower install && ./node_modules/gulp/bin/gulp.js"
   }
 }
