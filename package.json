@@ -21,7 +21,7 @@
     "gulp-concat": "~2.1.7"
   },
   "scripts": {
-    "postinstall":
+    "prepublish":
       "./node_modules/bower/bin/bower install && ./node_modules/gulp/bin/gulp.js"
   }
 }
