@@ -35,6 +35,12 @@ gulp.task('fonts', function () {
       .pipe(gulp.dest('./public/fonts'));
 });
 
+gulp.task('watch', function () {
+  gulp.watch(['./front/**/*'], function () {
+    gulp.run('default');
+  });
+});
+
 gulp.task('default', function () {
   gulp.run('js', 'css', 'fonts');
 });
