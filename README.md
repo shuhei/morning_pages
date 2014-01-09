@@ -7,12 +7,13 @@ A [Morning Pages](http://juliacameronlive.com/basic-tools/morning-pages/) app wr
 
 ## Installation
 
-1. Install Go.
+1. Have Go and Node.js installed.
 2. Make sure that `$GOPATH/bin` is in your `$PATH`.
 3. Install godep. `go get github.com/kr/godep`
 4. Pull this repository.
 5. Set environmental variables. In development, use `.env`.
-6. `godep go install` and `foreman start`
+6. `npm install` and its postinstall hook builds the front-end app.
+7. `godep go install` and `foreman start`
 
 ## Environmental Variables
 
@@ -27,6 +28,21 @@ A [Morning Pages](http://juliacameronlive.com/basic-tools/morning-pages/) app wr
 
 ```
 godep go test
+```
+
+## Build front-end app
+
+First, install bower and gulp globally for convenience.
+
+```
+npm install -g bower gulp
+```
+
+Then, install libraries and build.
+
+```
+bower install
+gulp
 ```
 
 ## Add or update a dependency
