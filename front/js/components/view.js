@@ -2,8 +2,8 @@
 
 var React = require('react');
 
-var BackboneMixin = require('./backbone-mixin');
-var utils = require('./utils');
+var BackboneMixin = require('../lib/backbone-mixin');
+var utils = require('../lib/utils');
 
 module.exports = React.createClass({
   mixins: [BackboneMixin],

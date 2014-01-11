@@ -2,11 +2,11 @@
 
 var React = require('react');
 
-var Entry = require('./entry');
+var Entry = require('../models/entry');
 var EntryIndex = require('./entry-index');
 var View = require('./view');
 var Edit = require('./edit');
-var utils = require('./utils');
+var utils = require('../lib/utils');
 
 module.exports = React.createClass({
   getInitialState: function () {

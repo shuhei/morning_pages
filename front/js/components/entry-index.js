@@ -3,7 +3,7 @@
 var React = require('react');
 var jQuery = require('jquery');
 
-var utils = require('./utils');
+var utils = require('../lib/utils');
 
 module.exports = React.createClass({
   getInitialState: function () {

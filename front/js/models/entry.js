@@ -1,4 +1,4 @@
-var Backbone = require('./backbone-shim');
+var Backbone = require('../lib/backbone-shim');
 
 module.exports = Backbone.Model.extend({
   url: function () {

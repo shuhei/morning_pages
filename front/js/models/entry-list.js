@@ -1,4 +1,5 @@
-var Backbone = require('./backbone-shim');
+var _ = require('underscore');
+var Backbone = require('../lib/backbone-shim');
 var Entry = require('./entry');
 
 module.exports = Backbone.Collection.extend({

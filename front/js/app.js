@@ -1,11 +1,10 @@
 /** @jsx React.DOM */
 
-var _ = require('underscore');
-var Backbone = require('./backbone-shim');
+var Backbone = require('./lib/backbone-shim');
 var React = require('react');
 
-var EntryApp = require('./entry-app');
-var utils = require('./utils');
+var EntryApp = require('./components/entry-app');
+var utils = require('./lib/utils');
 
 jQuery(function ($) {
   var container = document.getElementById('mp-view-container');
@@ -15,10 +14,6 @@ jQuery(function ($) {
     <EntryApp />,
     container
   );
-
-  //
-  // Router
-  //
 
   var AppRouter = Backbone.Router.extend({
     initialize: function (options) {
