@@ -1,15 +1,25 @@
 var gulp = require('gulp');
 var concat = require('gulp-concat');
-var browserify = require('gulp-browserify');
+var browserify = require('browserify');
+var source = require('vinyl-source-stream');
+
+var libs = ['jquery', 'underscore', 'backbone', 'react'];
 
 gulp.task('js', function () {
-  return gulp.src('./front/js/app.js')
-             .pipe(browserify({
-               transform: ['reactify', 'debowerify'],
-               debug: !gulp.env.production
-             }))
-             .pipe(concat('script.js'))
-             .pipe(gulp.dest('./public/js'));
+  var b = browserify('./front/js/app.js');
+  libs.forEach(function (l) { b.external(l); });
+  b.transform('reactify');
+  return b.bundle()
+          .pipe(source('app.js'))
+          .pipe(gulp.dest('./public/js/app.js'));
+});
+
+gulp.task('lib', function () {
+  var b = browserify('./front/js/lib.js');
+  libs.forEach(function (l) { b.require(l); });
+  return b.bundle()
+          .pipe(source('lib.js'))
+          .pipe(gulp.dest('./public/js/lib.js'));
 });
 
 gulp.task('css', function () {
@@ -29,11 +39,11 @@ gulp.task('fonts', function () {
 });
 
 gulp.task('watch', function () {
-  gulp.watch(['./front/**/*'], function () {
-    gulp.run('default');
+  gulp.watch(['./front/js/**/*', './front/css/**/*'], function () {
+    gulp.run('js', 'css');
   });
 });
 
 gulp.task('default', function () {
-  gulp.run('js', 'css', 'fonts');
+  gulp.run('js', 'lib', 'css', 'fonts');
 });

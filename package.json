@@ -19,9 +19,11 @@
     "debowerify": "~0.5.1",
     "reactify": "~0.5.0",
     "react": "~0.8.0",
-    "gulp-browserify": "~0.2.4",
     "backbone": "~1.1.0",
-    "underscore": "~1.5.2"
+    "underscore": "~1.5.2",
+    "vinyl-source-stream": "0.0.0",
+    "browserify": "~3.19.1",
+    "jquery": "~2.1.0-beta3"
   },
   "scripts": {
     "prepublish": "./node_modules/.bin/bower install && ./node_modules/.bin/gulp"

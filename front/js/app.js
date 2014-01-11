@@ -1,5 +1,6 @@
 /** @jsx React.DOM */
 
+var jQuery = require('jquery')(window);
 var Backbone = require('./lib/backbone-shim');
 var React = require('react');
 

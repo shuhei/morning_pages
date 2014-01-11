@@ -1,7 +1,7 @@
 /** @jsx React.DOM */
 
 var React = require('react');
-var jQuery = require('jquery');
+var jQuery = require('jquery')(window);
 
 var utils = require('../lib/utils');
 
