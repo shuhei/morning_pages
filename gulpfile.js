@@ -3,10 +3,10 @@ var concat = require('gulp-concat');
 var browserify = require('gulp-browserify');
 
 gulp.task('js', function () {
-  return gulp.src('./front/jsx/view.jsx')
+  return gulp.src('./front/js/app.js')
              .pipe(browserify({
                transform: ['reactify', 'debowerify'],
-               debug: false
+               debug: !gulp.env.production
              }))
              .pipe(concat('script.js'))
              .pipe(gulp.dest('./public/js'));
