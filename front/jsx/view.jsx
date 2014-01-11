@@ -1,5 +1,10 @@
 /** @jsx React.DOM */
 
+var jQuery = require('jquery');
+var _ = require('underscore');
+var Backbone = require('backbone');
+var React = require('react');
+
 jQuery(function ($) {
   var container = document.getElementById('mp-view-container');
   if (!container) return;
