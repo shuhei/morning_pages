@@ -11,7 +11,7 @@ module.exports = React.createClass({
       from: null,
       to: null,
       today: utils.dateToString(new Date()),
-      entries: []
+      entries: new EntryList()
     };
   },
   componentDidMount: function () {
@@ -26,6 +26,9 @@ module.exports = React.createClass({
     var d = utils.parseDate(date);
     var from = utils.beginningOfMonth(d);
     var to = utils.endOfMonth(d);
+    if (this.state.from && this.state.to && this.state.from <= d && d <= this.state.to) {
+      return;
+    }
     var query = { from: utils.dateToString(from), to: utils.dateToString(to) };
     var entries = new EntryList([], query);
     entries.fetch().done(function () {
@@ -43,12 +46,12 @@ module.exports = React.createClass({
       return <div />;
     }
 
-    var prev = utils.beginningOfMonth(utils.prevDate(this.state.from));
-    var next = utils.nextDate(this.state.to);
-
     var items = [];
     for (var day = 1, l = this.state.to.getDate(); day <= l; day++) {
       var date = utils.dateString(this.state.from.getFullYear(), this.state.from.getMonth(), day);
+      if (this.state.today < date) {
+        break;
+      }
       var entry = this.state.entries.findWhere({ date: date });
       if (date === this.props.date) {
         items.push(<li><span className="mp-date-active">{day}</span></li>);
@@ -58,14 +61,16 @@ module.exports = React.createClass({
         items.push(<li><span className="mp-date-inactive">{day}</span></li>);
       }
     }
-    if (this.state.prev) {
-      items.unshift(
-        <li><a href={"#entries/" + utils.dateToString(this.state.prev)}><i className="fa fa-arrow-left"></i></a></li>
-      );
-    }
-    if (this.state.next) {
+
+    var prev = utils.beginningOfMonth(utils.prevDate(this.state.from));
+    items.unshift(
+      <li><a href={"#entries/" + utils.dateToString(prev)}><i className="fa fa-arrow-left"></i></a></li>
+    );
+
+    var next = utils.nextDate(this.state.to);
+    if (utils.dateToString(next) <= this.state.today) {
       items.push(
-        <li><a href={"#entries/" + utils.dateToString(this.state.next)}><i className="fa fa-arrow-right"></i></a></li>
+        <li><a href={"#entries/" + utils.dateToString(next)}><i className="fa fa-arrow-right"></i></a></li>
       );
     }
     return <ul className="mp-entry-index">{items}</ul>;
