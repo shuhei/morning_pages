@@ -5,6 +5,7 @@ var Entry = require('./entry');
 module.exports = Backbone.Collection.extend({
   model: Entry,
   initialize: function (models, options) {
+    options = options || {};
     this.from = options.from;
     this.to = options.to;
   },

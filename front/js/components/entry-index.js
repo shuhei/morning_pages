@@ -1,17 +1,17 @@
 /** @jsx React.DOM */
 
 var React = require('react');
-var jQuery = require('jquery')(window);
 
+var EntryList = require('../models/entry-list');
 var utils = require('../lib/utils');
 
 module.exports = React.createClass({
   getInitialState: function () {
     return {
-      prev: null,
-      next: null,
+      from: null,
+      to: null,
       today: utils.dateToString(new Date()),
-      dates: []
+      entries: []
     };
   },
   componentDidMount: function () {
@@ -23,41 +23,49 @@ module.exports = React.createClass({
     }
   },
   fetchDates: function (date) {
-    jQuery.ajax({
-      type: 'GET',
-      url: '/dates/' + date,
-      dataType: 'json'
-    }).done(function (data) {
+    var d = utils.parseDate(date);
+    var from = utils.beginningOfMonth(d);
+    var to = utils.endOfMonth(d);
+    var query = { from: utils.dateToString(from), to: utils.dateToString(to) };
+    var entries = new EntryList([], query);
+    entries.fetch().done(function () {
       this.setState({
-        prev: data.PreviousMonth,
-        next: data.NextMonth,
-        dates: data.EntryDates
+        from: from,
+        to: to,
+        entries: entries
       });
     }.bind(this)).fail(function () {
       console.log('Failed to get entry index.');
     }.bind(this));
   },
   render: function () {
-    var items = this.state.dates.map(function (date) {
-      var day = utils.extractDay(date.Date);
-      if (!date.HasEntry && date.Date !== this.state.today) {
-        return <li><span className="mp-date-inactive">{day}</span></li>;
-      } else if (date.IsFuture) {
-        return <li><span className="mp-date-inactive">{day}</span></li>;
-      } else if (date.Date === this.props.date) {
-        return <li><span className="mp-date-active">{day}</span></li>;
+    if (!this.state.from || !this.state.to) {
+      return <div />;
+    }
+
+    var prev = utils.beginningOfMonth(utils.prevDate(this.state.from));
+    var next = utils.nextDate(this.state.to);
+
+    var items = [];
+    for (var day = 1, l = this.state.to.getDate(); day <= l; day++) {
+      var date = utils.dateString(this.state.from.getFullYear(), this.state.from.getMonth(), day);
+      var entry = this.state.entries.findWhere({ date: date });
+      if (date === this.props.date) {
+        items.push(<li><span className="mp-date-active">{day}</span></li>);
+      } else if (entry || date === this.state.today) {
+        items.push(<li><a href={"#entries/" + date}>{day}</a></li>);
       } else {
-        return <li><a href={"#entries/" + date.Date}>{day}</a></li>;
+        items.push(<li><span className="mp-date-inactive">{day}</span></li>);
       }
-    }, this);
+    }
     if (this.state.prev) {
       items.unshift(
-        <li><a href={"#entries/" + this.state.prev}><i className="fa fa-arrow-left"></i></a></li>
+        <li><a href={"#entries/" + utils.dateToString(this.state.prev)}><i className="fa fa-arrow-left"></i></a></li>
       );
     }
     if (this.state.next) {
       items.push(
-        <li><a href={"#entries/" + this.state.next}><i className="fa fa-arrow-right"></i></a></li>
+        <li><a href={"#entries/" + utils.dateToString(this.state.next)}><i className="fa fa-arrow-right"></i></a></li>
       );
     }
     return <ul className="mp-entry-index">{items}</ul>;

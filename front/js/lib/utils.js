@@ -9,6 +9,9 @@ var utils = {
     }
     return str;
   },
+  dateString: function (y, m, d) {
+    return [y, utils.pad(m + 1), utils.pad(d)].join('-');
+  },
   dateToString: function (date) {
     return [date.getFullYear(), date.getMonth() + 1, date.getDate()].map(utils.pad).join('-');
   },
@@ -21,6 +24,12 @@ var utils = {
   },
   endOfMonth: function (date) {
     return new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
+  },
+  prevDate: function (date) {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate() - 1);
+  },
+  nextDate: function (date) {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
   },
   extractDay: function (dateString) {
     return dateString.split('-')[2].replace(/^0/, '');

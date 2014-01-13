@@ -72,16 +72,9 @@ func NewEntry(user *User, date string) *Entry {
 	return &Entry{Id: bson.NewObjectId(), Date: date, Body: "", UserId: user.Id}
 }
 
-type DateEntry struct {
-	Date     string
-	HasEntry bool
-	IsFuture bool
-}
-
 type EntryStore interface {
 	Find(user *User, date string) (*Entry, error)
 	FindByDate(user *User, from, to string) ([]Entry, error)
-	FindDates(user *User, t time.Time, now time.Time) ([]DateEntry, error)
 	Create(entry *Entry) (bson.ObjectId, error)
 	Update(entry *Entry) error
 }
@@ -118,40 +111,8 @@ func (store *entryStore) FindByDate(user *User, from, to string) ([]Entry, error
 		query["date"] = dateQuery
 	}
 	fmt.Println(query)
-	err := store.db.C(EntryCollectionName).Find(query).All(&entries)
+	err := store.db.C(EntryCollectionName).Find(query).Sort("date").All(&entries)
 	return entries, err
-}
-
-func (store *entryStore) FindDates(user *User, t time.Time, now time.Time) ([]DateEntry, error) {
-	year, month, _ := t.Year(), t.Month(), t.Day()
-	days := daysIn(month, year)
-	start, end := dateString(year, month, 1), dateString(year, month, days)
-
-	query := bson.M{
-		"user_id": user.Id,
-		"date":    bson.M{"$gte": start, "$lte": end},
-	}
-	selector := bson.M{"date": 1}
-	var entries []Entry
-	err := store.db.C(EntryCollectionName).Find(query).Select(selector).Sort("date").All(&entries)
-	if err != nil {
-		return nil, err
-	}
-
-	nowString := dateStringOfTime(now)
-	dates := make([]DateEntry, days)
-	for i := 0; i < days; i++ {
-		date := dateString(year, month, i+1)
-		hasEntry := false
-		for _, entry := range entries {
-			if entry.Date == date {
-				hasEntry = true
-				break
-			}
-		}
-		dates[i] = DateEntry{Date: date, HasEntry: hasEntry, IsFuture: nowString < date}
-	}
-	return dates, nil
 }
 
 func (store *entryStore) Create(entry *Entry) (bson.ObjectId, error) {

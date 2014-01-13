@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"time"
 )
 
 const SessionUserIdKey string = "user-id"
@@ -141,31 +140,4 @@ func UpdateEntry(ctx *web.Context, ren render.Render, entries EntryStore, params
 	}
 
 	ren.JSON(200, entry)
-}
-
-func GetEntryDates(ctx *web.Context, ren render.Render, entries EntryStore, params martini.Params, user *User) {
-	now := time.Now()
-	date, err := parseDate(params["date"])
-	if err != nil {
-		ctx.Abort(http.StatusInternalServerError, err.Error())
-		return
-	}
-	dates, err := entries.FindDates(user, date, now)
-	if err != nil {
-		ctx.Abort(http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	data := make(map[string]interface{})
-	data["EntryDates"] = dates
-	data["Today"] = dateStringOfTime(now)
-
-	prev := beginningOfPreviousMonth(date)
-	data["PreviousMonth"] = dateStringOfTime(prev)
-
-	next := beginningOfNextMonth(date)
-	if next.UnixNano() <= now.UnixNano() {
-		data["NextMonth"] = dateStringOfTime(next)
-	}
-	ren.JSON(200, data)
 }

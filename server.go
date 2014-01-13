@@ -23,8 +23,6 @@ func prepareRouter(m *martini.ClassicMartini) {
 	m.Get("/entries/:date", Authorize, ValidateDate, GetEntry)
 	m.Post("/entries/:date", Authorize, ValidateDate, CreateEntry)
 	m.Put("/entries/:date", Authorize, ValidateDate, UpdateEntry)
-
-	m.Get("/dates/:date", Authorize, ValidateDate, GetEntryDates)
 }
 
 // Execute cleanup func when the server is killed.
