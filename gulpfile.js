@@ -1,25 +1,25 @@
 var gulp = require('gulp');
 var concat = require('gulp-concat');
-var browserify = require('browserify');
-var source = require('vinyl-source-stream');
+var browserify = require('gulp-browserify');
 
 var libs = ['jquery', 'underscore', 'backbone', 'react'];
 
 gulp.task('js', function () {
-  var b = browserify('./front/js/app.js');
-  libs.forEach(function (l) { b.external(l); });
-  b.transform('reactify');
-  return b.bundle()
-          .pipe(source('app.js'))
-          .pipe(gulp.dest('./public/js/app.js'));
+  return gulp.src('./front/js/app.js', { read: false })
+             .pipe(browserify({ transform: ['reactify'], debug: !gulp.env.production }))
+             .on('prebundle', function (bundler) {
+                libs.forEach(function (lib) { bundler.external(lib); });
+             })
+             .pipe(gulp.dest('./public/js'));
 });
 
 gulp.task('lib', function () {
-  var b = browserify('./front/js/lib.js');
-  libs.forEach(function (l) { b.require(l); });
-  return b.bundle()
-          .pipe(source('lib.js'))
-          .pipe(gulp.dest('./public/js/lib.js'));
+  return gulp.src('./front/js/lib.js', { read: false })
+             .pipe(browserify({ debug: !gulp.env.production }))
+             .on('prebundle', function (bundler) {
+               libs.forEach(function (lib) { bundler.require(lib); });
+             })
+             .pipe(gulp.dest('./public/js'));
 });
 
 gulp.task('css', function () {
