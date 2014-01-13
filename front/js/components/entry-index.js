@@ -54,23 +54,23 @@ module.exports = React.createClass({
       }
       var entry = this.state.entries.findWhere({ date: date });
       if (date === this.props.date) {
-        items.push(<li><span className="mp-date-active">{day}</span></li>);
+        items.push(<li key={date}><span className="mp-date-active">{day}</span></li>);
       } else if (entry || date === this.state.today) {
-        items.push(<li><a href={"#entries/" + date}>{day}</a></li>);
+        items.push(<li key={date}><a href={"#entries/" + date}>{day}</a></li>);
       } else {
-        items.push(<li><span className="mp-date-inactive">{day}</span></li>);
+        items.push(<li key={date}><span className="mp-date-inactive">{day}</span></li>);
       }
     }
 
-    var prev = utils.beginningOfMonth(utils.prevDate(this.state.from));
+    var prev = utils.dateToString(utils.beginningOfMonth(utils.prevDate(this.state.from)));
     items.unshift(
-      <li><a href={"#entries/" + utils.dateToString(prev)}><i className="fa fa-arrow-left"></i></a></li>
+      <li key={prev}><a href={"#entries/" + prev}><i className="fa fa-arrow-left"></i></a></li>
     );
 
-    var next = utils.nextDate(this.state.to);
-    if (utils.dateToString(next) <= this.state.today) {
+    var next = utils.dateToString(utils.nextDate(this.state.to));
+    if (next <= this.state.today) {
       items.push(
-        <li><a href={"#entries/" + utils.dateToString(next)}><i className="fa fa-arrow-right"></i></a></li>
+        <li key={next}><a href={"#entries/" + next}><i className="fa fa-arrow-right"></i></a></li>
       );
     }
     return <ul className="mp-entry-index">{items}</ul>;
