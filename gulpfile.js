@@ -2,7 +2,7 @@ var gulp = require('gulp');
 var concat = require('gulp-concat');
 var browserify = require('gulp-browserify');
 
-var libs = ['jquery', 'underscore', 'backbone', 'react'];
+var libs = ['jquery', 'underscore', 'backbone', 'react', 'domready'];
 
 gulp.task('js', function () {
   return gulp.src('./front/js/app.js', { read: false })
