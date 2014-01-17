@@ -5,7 +5,7 @@ var browserify = require('gulp-browserify');
 var libs = ['jquery', 'underscore', 'backbone', 'react', 'domready'];
 
 gulp.task('js', function () {
-  return gulp.src('./front/js/app.js', { read: false })
+  return gulp.src('./front/js/app.js')
              .pipe(browserify({ transform: ['reactify'], debug: !gulp.env.production }))
              .on('prebundle', function (bundler) {
                 libs.forEach(function (lib) { bundler.external(lib); });
@@ -14,7 +14,7 @@ gulp.task('js', function () {
 });
 
 gulp.task('lib', function () {
-  return gulp.src('./front/js/lib.js', { read: false })
+  return gulp.src('./front/js/lib.js')
              .pipe(browserify({ debug: !gulp.env.production }))
              .on('prebundle', function (bundler) {
                libs.forEach(function (lib) { bundler.require(lib); });

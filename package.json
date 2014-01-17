@@ -21,7 +21,7 @@
     "backbone": "~1.1.0",
     "underscore": "~1.5.2",
     "jquery": "~2.1.0-beta3",
-    "gulp-browserify": "~0.2.4",
+    "gulp-browserify": "~0.3.3",
     "domready": "~0.2.13"
   },
   "scripts": {
