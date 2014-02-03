@@ -14,17 +14,17 @@
   },
   "dependencies": {
     "bower": "~1.2.8",
-    "gulp": "~3.3.4",
+    "gulp": "~3.5.1",
     "gulp-concat": "~2.1.7",
     "reactify": "~0.5.0",
     "react": "~0.8.0",
     "backbone": "~1.1.0",
     "underscore": "~1.5.2",
     "jquery": "~2.1.0-rc1",
-    "gulp-browserify": "~0.3.3",
+    "gulp-browserify": "~0.4.2",
     "domready": "~0.2.13",
-    "gulp-plumber": "~0.5.6",
-    "gulp-util": "~2.2.12"
+    "gulp-util": "~2.2.12",
+    "multipipe": "0.0.1"
   },
   "scripts": {
     "prepublish": "./node_modules/.bin/bower install && ./node_modules/.bin/gulp"
