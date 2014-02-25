@@ -1,5 +1,5 @@
 var Backbone = require('backbone');
-var jQuery = require('jquery')(window);
+var jQuery = require('jquery');
 
 Backbone.$ = jQuery;
 
