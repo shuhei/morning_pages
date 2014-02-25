@@ -3,12 +3,12 @@ go:
   - tip
 install:
   - go get -v code.google.com/p/go.tools/cmd/cover
-  - go get -v github.com/axw/gocov/gocov
   - go get -v github.com/mattn/goveralls
   - go get -v github.com/kr/godep
   - export PATH=$HOME/gopath/bin:$PATH
   - export GOPATH=`godep path`:$GOPATH
 env:
-  secure: "K16DOC1qMh1+CPwfdpXm4Ui06SkFCK8YGVubO7S5jXLch2vYw5rnj9KjofxO7u/0q7R2dC/wGitMkQO+BScjDiWwd7/S5DK7Q5NG9B49jFUdCpR5S772Ulg7vfway+UoeA6ziYAkcPhWlCBLVn4P3zULC0UtwfN6xDXPy8w+u8Q="
+  secure: "eDHeYePqPVgroZJPTx5Dao6d9nNV1iVt/4X+yjdFge0LhPSqxrh99O0OSHz/U5gsO9egk+/8vzCYmsvHs5CrI9c0bZ+gAqlm9Ho3LJbqTINSlOX9JIYV2+6SudoRooUJC7F0R6aRfJ5CH8NssIJTcBTx3Lxqxoybs0xNRviLvjw="
 script:
-  - goveralls $COVERALLS_KEY
+  - godep go test -covermode=count -coverprofile=profile.cov
+  - goveralls -repotoken=$COVERALLS_KEY -coverprofile=profile.cov -service=travis-ci
