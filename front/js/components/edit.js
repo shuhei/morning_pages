@@ -6,16 +6,14 @@ var BackboneMixin = require('../lib/backbone-mixin');
 var utils = require('../lib/utils');
 
 module.exports = React.createClass({
-  mixins:[BackboneMixin],
-  getInitialState: function () {
-    return { dirty: undefined };
-  },
-  getBackboneModels: function () {
-    window.a = this.props.entry;
-    return [this.props.entry];
-  },
-  componentDidMount: function () {
+  componentDidMount: function() {
     this.wait();
+  },
+  getInitialState: function () {
+    return {
+      dirty: undefined,
+      body: this.props.entry.get('body')
+    };
   },
   // auto: boolean to indicate whether it's auto save or not.
   save: function (auto) {
@@ -34,20 +32,31 @@ module.exports = React.createClass({
     // TODO: Block editing if not auto save.
     this.props.entry.save().done(function () {
       console.log('save success');
-      if (!auto)  window.location = '#/entries/' + this.props.entry.get('date');
+      if (auto) {
+        this.props.entry.set('body', this.state.body);
+      } else {
+        window.location = '#/entries/' + this.props.entry.get('date');
+      }
     }.bind(this)).fail(function () {
       console.log('save failure', arguments[0].responseText);
       this.setState({ dirty: true });
     }.bind(this)).always(function () {
-      if (auto && this.isMounted()) this.wait();
+      if (auto) {
+        this.wait();
+      }
     }.bind(this));
   },
   wait: function () {
-    setTimeout(this.save.bind(this, true), 15 * 1000);
+    if (this.isMounted()) {
+      setTimeout(this.save.bind(this, true), 15 * 1000);
+    }
   },
   handleChange: function (e) {
     this.props.entry.set('body', e.target.value);
-    this.setState({ dirty: true });
+    this.setState({
+      dirty: true,
+      body: e.target.value
+    });
   },
   render: function () {
     var status;
@@ -62,13 +71,13 @@ module.exports = React.createClass({
       <div className="form" id="mp-entry-form">
         <div className="form-group" id="mp-entry-body">
           <textarea name="body" rows="20" cols="80" className="form-control"
-                    value={this.props.entry.get('body')} onChange={this.handleChange} />
+                    value={this.state.body} onChange={this.handleChange} />
         </div>
         <div className="form-group">
           <button className="btn btn-default" onClick={this.save.bind(this, false)}>完了</button>
           <span id="mp-entry-status">{status}</span>
           <p className="pull-right">
-            <span id="mp-char-count">{this.props.entry.count()}</span> 文字
+            <span id="mp-char-count">{this.state.body.length}</span> 文字
           </p>
         </div>
       </div>
