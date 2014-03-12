@@ -3,7 +3,7 @@
 A [Morning Pages](http://juliacameronlive.com/basic-tools/morning-pages/) app written in Go for [scriptio continua](http://en.wikipedia.org/wiki/Scriptio_continua).
 
 [![Build Status](https://travis-ci.org/shuhei/morning_pages.png)](https://travis-ci.org/shuhei/morning_pages)
-[![Coverage Status](https://coveralls.io/repos/shuhei/morning_pages/badge.png?branch=HEAD)](https://coveralls.io/r/shuhei/morning_pages?branch=HEAD)
+[![Coverage Status](https://coveralls.io/repos/shuhei/morning_pages/badge.png?branch=master)](https://coveralls.io/r/shuhei/morning_pages?branch=master)
 
 ## Installation
 
